@@ -1,0 +1,733 @@
+---
+title: "Plant Fitness Data Cleaning"
+author: "Annie Schiffer"
+date: "11/30/2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Our end goal in cleaning this data is to create a document containing the following for each individual of a species: bloom start estimate, bloom end estimate, soil moisture measures, and seed counts.
+
+#Soil Moisture
+
+We began by evaluating soil moisture as a covariate. We had to first determine which soil moisture measure (mean, peak moisture, range, etc.) was most correlated with the seed data. Before we calculated any soil moisture measure, we first wanted to visualize the data with week on the x-axis and % volumetric water content on the y-axis.
+
+```{r importing soil data, message=FALSE, warning=FALSE}
+#Clearing Environment
+rm(list = ls())
+#Importing Data
+library(readxl)
+soil_moisture_attempt <- read_excel("~/Documents/BROSI/THESIS/Data Cleaning/soil moisture attempt.xlsx", 
+    sheet = "adjusted soil moisture")
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(lubridate)
+```
+
+```{r transposing data, message=FALSE, warning=FALSE}
+#Transposing Data
+soil_moisture_attempt2=soil_moisture_attempt[,-13]
+soil.summary = soil_moisture_attempt2 %>% 
+  group_by(site, plot.treat) %>% 
+  summarise_all(funs(mean))
+soil.summary = melt(soil.summary, id=c("site", "plot.treat", "quad"))
+
+variable<-as.numeric(soil.summary$variable)
+
+#Plotting Soil Moisture vs. Week
+ggplot(soil.summary,aes(x=variable,y=value, group = interaction(site,plot.treat))) +
+  geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
+  labs(y="Soil Moisture (%VWC)",x="Week",title="Soil Moisture in Manipulated and Control Plots") +
+  geom_smooth(se=F,aes(color=plot.treat))
+```
+
+Due to limitations in the field, a few of the sites already melted out before we got the first soil measurement. The largest gap in missing soil moisture measurements was 2 weeks for the Stupid Falls manipulated plot. To standardize the data, we created an effective start date for each of the plots that was 2 weeks after the recorded meltout date. 
+
+```{r adding effective start date}
+#Adding Effective Start Date
+soil_moisture_attempt$effect.start.date<-as.Date(soil_moisture_attempt$meltout.date+days(14))
+```
+
+One of the soil moisture measures that we wanted to include was rate of soil moisture change. Based on the plot above, the greatest change is the initial decline in moisture over the first few weeks. To capture that change, we created an effective end date that was 3 weeks after the effective start date for each individual. 
+
+```{r adding effective end date}
+#Adding Effective End Date
+soil_moisture_attempt$effect.end.date<-as.Date(soil_moisture_attempt$effect.start.date+days(14))
+head(soil_moisture_attempt)
+```
+
+At this point, we had an effective start date and end date for our soil moisture data. However, the soil moisture measurements were still broken down by week number. Therefore, we had to assign a week number to the effective start and end dates.
+
+```{r assigning week number}
+#Adjusting Week Number
+x<-soil_moisture_attempt$effect.start.date
+soil_moisture_attempt$effect.start.week<-strftime(x,format = "%W")
+soil_moisture_attempt$effect.start.week[soil_moisture_attempt$effect.start.week=="22"]<-"1"
+soil_moisture_attempt$effect.start.week[soil_moisture_attempt$effect.start.week=="23"]<-"2"
+soil_moisture_attempt$effect.start.week[soil_moisture_attempt$effect.start.week=="24"]<-"3"
+soil_moisture_attempt$effect.start.week[soil_moisture_attempt$effect.start.week=="25"]<-"4"
+soil_moisture_attempt$effect.start.week[soil_moisture_attempt$effect.start.week=="26"]<-"5"
+soil_moisture_attempt$effect.start.week[soil_moisture_attempt$effect.start.week=="27"]<-"6"
+
+y<-soil_moisture_attempt$effect.end.date
+soil_moisture_attempt$effect.end.week<-strftime(y,format = "%W")
+soil_moisture_attempt$effect.end.week[soil_moisture_attempt$effect.end.week=="24"]<-"3"
+soil_moisture_attempt$effect.end.week[soil_moisture_attempt$effect.end.week=="25"]<-"4"
+soil_moisture_attempt$effect.end.week[soil_moisture_attempt$effect.end.week=="26"]<-"5"
+soil_moisture_attempt$effect.end.week[soil_moisture_attempt$effect.end.week=="27"]<-"6"
+soil_moisture_attempt$effect.end.week[soil_moisture_attempt$effect.end.week=="28"]<-"7"
+soil_moisture_attempt$effect.end.week[soil_moisture_attempt$effect.end.week=="29"]<-"8"
+soil_moisture_attempt$effect.end.week[soil_moisture_attempt$effect.end.week=="30"]<-"9"
+```
+
+Next, we created a new data frame with our soil moisture calculations.
+
+```{r new data frame, results="hide"}
+#Creating a New Data Frame for Soil Moisture
+soil.moist.final <- list()
+for(i in 1:nrow(soil_moisture_attempt)) {
+  temp <- soil_moisture_attempt[i, ]
+  wk.names <- c(temp[ ,'effect.start.week'], temp[ ,'effect.end.week'])
+  sub.cols <- which(names(temp) %in% wk.names)
+  row.new <- temp[c(1:3, sub.cols[1]:sub.cols[2])]
+  names(row.new) <- c('site', 'plot.treat','quad', 'effect.start', 'effect.middle', 'effect.end')
+  soil.moist.final[[i]] <- row.new
+  print(i)
+}
+```
+
+```{r soil moisture}
+soil.moist.final <- do.call(rbind, soil.moist.final)
+head(soil.moist.final)
+```
+
+From there, we could calculate mean soil moisture and rate of moisture change between the effective start and end dates. We also added the effective minimum, which was the moisture measurement for week 7 in every site. We added the last measurement, and the range between the effective start date and effective minimum. The effective start date was the peak soil moisture reading in every site. 
+
+```{r soil moisture calculations}
+#Mean
+soil.moist.final$mean<-((soil.moist.final$effect.start+soil.moist.final$effect.middle+soil.moist.final$effect.end)/3)
+
+#Rate
+soil.moist.final$rate<-((soil.moist.final$effect.end-soil.moist.final$effect.start)/3)
+
+#Effective minimum (week 7)
+soil.moist.final$effect.min<-soil_moisture_attempt$`7`
+
+#End (week 9)
+soil.moist.final$end<-soil_moisture_attempt$`9`
+
+#Difference between effective start and effective minimum
+soil.moist.final$range<-(soil.moist.final$effect.start-soil.moist.final$effect.min)
+
+head(soil.moist.final)
+#write.csv(soil.moist.final,"Soil_Moisture_by_Site.csv")
+```
+
+#Mertensia
+
+##Data Cleaning
+
+We began data cleaning with Mertensia fusiformis because we had clear seed counts for total developed seeds. Additionally, very few individual plants were missing bloom start or end dates.
+
+```{r importing Mertensia, message=FALSE,warning=FALSE}
+#Importing Mertensia Data
+library(readxl)
+Mertensia <- read_excel("~/Documents/BROSI/THESIS/Data Cleaning/Plant fitness.xlsx", 
+    sheet = "Mertensia")
+```
+
+First, we calculated the number of total Mertensia seeds by multiplying the number of developed flowers by 4. Each Mertensia flower produces 4 seeds.
+
+```{r Mertensia calculations,results='hide'}
+#Fixing Seed Data
+Mertensia$total.seeds<-Mertensia$flower.dev*4
+Mertensia<-Mertensia[!(Mertensia$site=="RustlersGulch"),]
+Mertensia$seed.weight<-as.numeric(Mertensia$seed.weight)
+round(Mertensia$seed.weight,digits=3)
+Mertensia$site[Mertensia$site=="Pfieler"]<-"Pfeiler"
+```
+
+Next, we added bloom start and end estimates for each individual. Because we visited sites twice a week, the bloom start dates and end dates are not the exact start and end dates. We grouped the start dates and end dates into half week (3-day) estimates.
+
+
+```{r adding Mertensia phenology estimates}
+#Adding Bloom Start and End Estimates
+Mertensia$start.estimate<-floor_date(Mertensia$bloom.start, "3 days")
+Mertensia$end.estimate<-floor_date(Mertensia$bloom.end, "3 days")
+head(Mertensia)
+```
+
+We plotted the bloom start estimates and total developed seeds to visualize the data.
+
+```{r plotting Mertensia phenology and seed set,message=FALSE, warning=FALSE}
+#Plotting Phenology and Seed Data for Fun
+library(ggplot2)
+ggplot(Mertensia,aes(x=Mertensia$start.estimate,y=Mertensia$total.seeds, group = plot.treat)) +
+  labs(y="Total Developed Seeds",x="Bloom Start Estimate",title="Mertensia") +
+  geom_point(aes(color=plot.treat,shape=treat),size=3, alpha = 0.8) +
+  geom_smooth(method = "lm",se=F,aes(color=plot.treat))
+```
+
+Once we had our clean Mertensia data and soil moisture calculations for every soil moisture quad in every plot, we had to match the soil moisture calculations to individual Mertensia plants. We did this by matching the quads where soil moisture was recorded to each of the quads where individuals were tagged.
+
+```{r assigning soil moisture quads to Mertensia individual quads}
+#Creating a new variable
+Mertensia$soil.moist.quad<-factor(NA,levels = c("1","6","12","15","18","24","30"))
+#Assigning soil moisture quads to each individual quad
+Mertensia$soil.moist.quad[Mertensia$quad<5]<- "1"
+Mertensia$soil.moist.quad[Mertensia$quad>4 & Mertensia$quad<9]<- "6"
+Mertensia$soil.moist.quad[Mertensia$quad>8 & Mertensia$quad<14]<- "12"
+Mertensia$soil.moist.quad[Mertensia$quad>13 & Mertensia$quad<18]<- "15"
+Mertensia$soil.moist.quad[Mertensia$quad>17 & Mertensia$quad<22]<- "18"
+Mertensia$soil.moist.quad[Mertensia$quad>21 & Mertensia$quad<27]<- "24"
+Mertensia$soil.moist.quad[Mertensia$quad>26]<- "30"
+
+head(Mertensia)
+```
+
+Finally, we merged the soil moisture estimates per individual with the phenology estimates and seed data. This produced a data frame with phenology estimates, soil moisture calculations, and seed counts for every individual of Mertensia.
+
+```{r merging soil moisture to Mertensia individuals}
+#Merging soil moisture variables to individuals
+Mertensia.final<-merge(soil.moist.final,Mertensia,
+                      by.x = c("site","plot.treat","quad"),by.y = c("site","plot.treat","soil.moist.quad"))
+#Excluding unnecessary columns
+Mertensia.final<-subset(Mertensia.final,select = -c(date.oe1,date.harvest,total.fruits,ovule.exp1,fruit.collected,height,notes,quad))
+head(Mertensia.final)
+```
+
+##Phenology
+
+We started by importing the flower count data from the snowmelt plant spreadsheet, and we included data only from 2019.
+
+```{r importing flower counts, message=FALSE,warning=FALSE}
+#Loading community flower count data
+flower.counts<-read_excel("~/Documents/BROSI/THESIS/Data Cleaning/snowmelt_plant_RMBL_2019.xlsx",
+    sheet = "plant_survey")
+#Excluding data from other years
+flower.counts<-flower.counts[c(2659:10715),]
+```
+
+Again, we started with Mertensia. The community peak is based on the maximum number of flowers in the control plot in each site. 
+
+```{r sorting Mertensia}
+#Limiting data to Mertensia counts in the control plot
+Mertensia.counts<-flower.counts[(flower.counts$plant=="Mertensia fusiformis"),]
+Mertensia.counts<-Mertensia.counts[,1:7]
+Mertensia.counts<-na.omit(Mertensia.counts)
+Mertensia.counts<-Mertensia.counts[(Mertensia.counts$plot=="Control"),]
+```
+
+Next, we loaded the Mertensia individuals data and found the midpoint between the bloom start and bloom end date. This date was also coverted to Julian date.
+
+```{r finding Mertensia midpoint}
+#Finding midpoint between start and end estimates
+Mertensia.final$midpoint<- Mertensia.final$bloom.start + floor((Mertensia.final$end.estimate-Mertensia.final$start.estimate)/2)
+#Converting midpoint to Julian date
+Mertensia.final$julian.midpoint<-julian(Mertensia.final$midpoint, origin = as.Date("2019-01-01"))
+```
+
+###Stupid Falls
+
+We found the community peak in each site by retrieving the date associated with the max number of flowers recorded. That date was then converted to Julian date. To begin, we looked at the Stupid Falls data. 
+
+```{r getting Mertensia SF community peak}
+#Finding date with max number of flowers
+Mertensia.counts.SF<-Mertensia.counts[(Mertensia.counts$site=="Stupid Falls"),]
+Mertensia.counts.SF[(which.max(Mertensia.counts.SF$total_flowers)),1]
+#Converting dataframe cell to Julian date
+Mert.SF.max<-as.matrix(Mertensia.counts.SF[(which.max(Mertensia.counts.SF$total_flowers)),1])
+Mert.SF.max<-as.Date(Mert.SF.max)
+Mert.SF.max<-julian(Mert.SF.max,origin=as.Date("2019-01-01"))
+```
+
+Specifically looking at the midpoints for Stupid Falls individuals, we calculated the difference in days between the midpoints and the community peak.
+
+```{r calculating Mertensia SF differences}
+#Finding difference between community peak and individual midpoints
+Mertensia.SF<-Mertensia.final[(Mertensia.final$site=="StupidFalls"),]
+Mertensia.SF$relative.position<-(Mertensia.SF$julian.midpoint-Mert.SF.max)
+```
+
+This process was repeated for every site with Mertensia.
+
+###Wash 3C
+
+```{r getting Mertensia WG community peak}
+Mertensia.counts.WG<-Mertensia.counts[(Mertensia.counts$site=="Wash 3C"),]
+Mertensia.counts.WG[(which.max(Mertensia.counts.WG$total_flowers)),1]
+Mert.WG.max<-as.matrix(Mertensia.counts.WG[(which.max(Mertensia.counts.WG$total_flowers)),1])
+Mert.WG.max<-as.Date(Mert.WG.max)
+Mert.WG.max<-julian(Mert.WG.max,origin=as.Date("2019-01-01"))
+```
+
+```{r calculating Mertensia WG differences}
+Mertensia.WG<-Mertensia.final[(Mertensia.final$site=="WG3C"),]
+Mertensia.WG$relative.position<-(Mertensia.WG$julian.midpoint-Mert.WG.max)
+```
+
+###Pfeiler
+
+```{r getting Mertensia PF community peak}
+Mertensia.counts.PF<-Mertensia.counts[(Mertensia.counts$site=="Pfeiler"),]
+Mertensia.counts.PF[(which.max(Mertensia.counts.PF$total_flowers)),1]
+Mert.PF.max<-as.matrix(Mertensia.counts.PF[(which.max(Mertensia.counts.PF$total_flowers)),1])
+Mert.PF.max<-as.Date(Mert.PF.max)
+Mert.PF.max<-julian(Mert.PF.max,origin=as.Date("2019-01-01"))
+```
+
+```{r calculating Mertensia PF differences}
+Mertensia.PF<-Mertensia.final[(Mertensia.final$site=="Pfeiler"),]
+Mertensia.PF$relative.position<-(Mertensia.PF$julian.midpoint-Mert.PF.max)
+```
+
+###Avery Picnic
+
+```{r getting Mertensia AP community peak}
+Mertensia.counts.AP<-Mertensia.counts[(Mertensia.counts$site=="Avery Picnic"),]
+Mertensia.counts.AP[(which.max(Mertensia.counts.AP$total_flowers)),1]
+Mert.AP.max<-as.matrix(Mertensia.counts.AP[(which.max(Mertensia.counts.AP$total_flowers)),1])
+Mert.AP.max<-as.Date(Mert.AP.max)
+Mert.AP.max<-julian(Mert.AP.max,origin=as.Date("2019-01-01"))
+```
+
+```{r calculating Mertensia AP differences}
+Mertensia.AP<-Mertensia.final[(Mertensia.final$site=="AveryPicnic"),]
+Mertensia.AP$relative.position<-(Mertensia.AP$julian.midpoint-Mert.AP.max)
+```
+
+##Putting it all Together
+
+```{r merging Mertensia}
+#Merging site data into final dataframe
+Mertensia.final2<-rbind(Mertensia.AP,Mertensia.PF,Mertensia.SF,Mertensia.WG)
+head(Mertensia.final2)
+```
+
+```{r export Mertensia csv}
+write.csv(Mertensia.final2, "Mertensia_final2.csv")
+```
+
+And now we repeat all of this for Potentilla!
+
+
+#Potentilla
+
+##Data Cleaning
+
+```{r importing Potentilla data, message=FALSE,warning=FALSE}
+#Importing Potentilla Data
+Potentilla <- read_excel("~/Documents/BROSI/THESIS/Data Cleaning/Plant fitness.xlsx", 
+    sheet = "Potentilla")
+```
+
+For the plant fitness component of the Potentilla data, we combined the developed seeds of flowers that were marked by Sharpie and the rest of the developed seeds on the plant. This gave us the total developed seeds per individual. 
+
+```{r Potentilla plant fitness calculations,results='hide'}
+#Fixing Seed Data
+Potentilla$dev.seed.sharp[is.na(Potentilla$dev.seed.sharp)]<- 0
+Potentilla$weight.sharp[is.na(Potentilla$weight.sharp)]<- 0
+Potentilla$total.seeds<-Potentilla$dev.seed.sharp+Potentilla$dev.seed.rest
+Potentilla$total.seed.weight<-Potentilla$weight.sharp+Potentilla$weight.rest
+Potentilla$total.seed.weight<-as.numeric(Potentilla$total.seed.weight)
+round(Potentilla$total.seed.weight,digits=3)
+Potentilla$site[Potentilla$site=="Pfieler"]<-"Pfeiler"
+```
+
+And we added phenology estimates like last time...
+
+```{r adding Potentilla phenology estimates}
+#Adding Bloom Start and End Estimates
+Potentilla$start.estimate<-floor_date(Potentilla$bloom.start, "3 days")
+Potentilla$end.estimate<-floor_date(Potentilla$bloom.end, "3 days")
+head(Potentilla)
+```
+
+...and plotted the phenology and seed data...
+
+```{r plotting Potentilla phenology and seed set,message=FALSE, warning=FALSE}
+#Plotting Phenology and Seed Data for Fun
+library(ggplot2)
+ggplot(Potentilla,aes(x=Potentilla$start.estimate,y=Potentilla$total.seeds, group = plot.treat)) +
+  labs(y="Total Developed Seeds",x="Bloom Start Estimate",title="Potentilla") +
+  geom_point(aes(color=plot.treat,shape=treat),size=3, alpha = 0.8) +
+  geom_smooth(method = "lm",se=F,aes(color=plot.treat))
+```
+
+...then added soil moisture quads...
+
+```{r assigning soil moisture quads to Potentilla individual quads}
+#Creating a new variable
+Potentilla$soil.moist.quad<-factor(NA,levels = c("1","6","12","15","18","24","30"))
+#Assigning soil moisture quads to each individual quad
+Potentilla$soil.moist.quad[Potentilla$quad<5]<- "1"
+Potentilla$soil.moist.quad[Potentilla$quad>4 & Potentilla$quad<9]<- "6"
+Potentilla$soil.moist.quad[Potentilla$quad>8 & Potentilla$quad<14]<- "12"
+Potentilla$soil.moist.quad[Potentilla$quad>13 & Potentilla$quad<18]<- "15"
+Potentilla$soil.moist.quad[Potentilla$quad>17 & Potentilla$quad<22]<- "18"
+Potentilla$soil.moist.quad[Potentilla$quad>21 & Potentilla$quad<27]<- "24"
+Potentilla$soil.moist.quad[Potentilla$quad>26]<- "30"
+
+head(Potentilla)
+```
+
+...and finally merged soil moisture variables to Potentilla data.
+
+```{r merging soil moisture to Potentilla individuals}
+#Merging soil moisture variables to individuals
+Potentilla.final<-merge(soil.moist.final,Potentilla,
+                      by.x = c("site","plot.treat","quad"),by.y = c("site","plot.treat","soil.moist.quad"))
+#Excluding unnecessary columns
+Potentilla.final<-subset(Potentilla.final,select = -c(date.oe1,date.harvest,total.fruits,ovule.exp1,trait,X__1,quad))
+head(Potentilla.final)
+```
+
+Note: I couldn't exclude the #flowers or #fruit.collected column due to R syntax.
+
+##Phenology
+
+The flower counts spreadsheet is already loaded, but this time we focused on the Potentilla rows.
+
+```{r sorting Potentilla}
+#Limiting data to Potentilla counts in the control plot
+Potentilla.counts<-flower.counts[(flower.counts$plant=="Potentilla pulcherrima"),]
+Potentilla.counts<-Potentilla.counts[,1:7]
+Potentilla.counts<-na.omit(Potentilla.counts)
+Potentilla.counts<-Potentilla.counts[(Potentilla.counts$plot=="Control"),]
+```
+
+We again found the Julian date for the midpoint between the Potentilla bloom start and end estimates.
+
+```{r finding Potentilla midpoint}
+#Finding midpoint between start and end estimates
+Potentilla.final$midpoint<- Potentilla.final$bloom.start + floor((Potentilla.final$end.estimate-Potentilla.final$start.estimate)/2)
+#Converting midpoint to Julian date
+Potentilla.final$julian.midpoint<-julian(Potentilla.final$midpoint, origin = as.Date("2019-01-01"))
+```
+
+###Avery Picnic
+
+Potentilla was set up in all sites except 403 Bench.
+
+```{r getting Pot AP community peak}
+#Finding date with max number of flowers
+Potentilla.counts.AP<-Potentilla.counts[(Potentilla.counts$site=="Avery Picnic"),]
+Potentilla.counts.AP[(which.max(Potentilla.counts.AP$total_flowers)),1]
+#Converting dataframe cell to Julian date
+Pot.AP.max<-as.matrix(Potentilla.counts.AP[(which.max(Potentilla.counts.AP$total_flowers)),1])
+Pot.AP.max<-as.Date(Pot.AP.max)
+Pot.AP.max<-julian(Pot.AP.max,origin=as.Date("2019-01-01"))
+```
+
+```{r calculating Pot AP differences}
+#Finding difference between community peak and individual midpoints
+Potentilla.AP<-Potentilla.final[(Potentilla.final$site=="AveryPicnic"),]
+Potentilla.AP$relative.position<-(Potentilla.AP$julian.midpoint-Pot.AP.max)
+```
+
+###Bellview Bench
+
+```{r getting Pot BB community peak}
+#Finding date with max number of flowers
+Potentilla.counts.BB<-Potentilla.counts[(Potentilla.counts$site=="Bellview Bench"),]
+Potentilla.counts.BB[(which.max(Potentilla.counts.BB$total_flowers)),1]
+#Converting dataframe cell to Julian date
+Pot.BB.max<-as.matrix(Potentilla.counts.BB[(which.max(Potentilla.counts.BB$total_flowers)),1])
+Pot.BB.max<-as.Date(Pot.BB.max)
+Pot.BB.max<-julian(Pot.BB.max,origin=as.Date("2019-01-01"))
+```
+
+```{r calculating Pot BB differences}
+#Finding difference between community peak and individual midpoints
+Potentilla.BB<-Potentilla.final[(Potentilla.final$site=="BellviewBench"),]
+Potentilla.BB$relative.position<-(Potentilla.BB$julian.midpoint-Pot.BB.max)
+```
+
+###Meridian
+
+```{r getting Pot MR community peak}
+#Finding date with max number of flowers
+Potentilla.counts.MR<-Potentilla.counts[(Potentilla.counts$site=="Meridian"),]
+Potentilla.counts.MR[(which.max(Potentilla.counts.MR$total_flowers)),1]
+#Converting dataframe cell to Julian date
+Pot.MR.max<-as.matrix(Potentilla.counts.MR[(which.max(Potentilla.counts.MR$total_flowers)),1])
+Pot.MR.max<-as.Date(Pot.MR.max)
+Pot.MR.max<-julian(Pot.MR.max,origin=as.Date("2019-01-01"))
+```
+
+```{r calculating Pot MR differences}
+#Finding difference between community peak and individual midpoints
+Potentilla.MR<-Potentilla.final[(Potentilla.final$site=="Meridian"),]
+Potentilla.MR$relative.position<-(Potentilla.MR$julian.midpoint-Pot.MR.max)
+```
+
+###Pfeiler
+
+```{r getting Pot PF community peak}
+#Finding date with max number of flowers
+Potentilla.counts.PF<-Potentilla.counts[(Potentilla.counts$site=="Pfeiler"),]
+Potentilla.counts.PF[(which.max(Potentilla.counts.PF$total_flowers)),1]
+#Converting dataframe cell to Julian date
+Pot.PF.max<-as.matrix(Potentilla.counts.PF[(which.max(Potentilla.counts.PF$total_flowers)),1])
+Pot.PF.max<-as.Date(Pot.PF.max)
+Pot.PF.max<-julian(Pot.PF.max,origin=as.Date("2019-01-01"))
+```
+
+```{r calculating Pot PF differences}
+#Finding difference between community peak and individual midpoints
+Potentilla.PF<-Potentilla.final[(Potentilla.final$site=="Pfeiler"),]
+Potentilla.PF$relative.position<-(Potentilla.PF$julian.midpoint-Pot.PF.max)
+```
+
+###Rustler's Gulch
+
+```{r getting Pot RG community peak}
+#Finding date with max number of flowers
+Potentilla.counts.RG<-Potentilla.counts[(Potentilla.counts$site=="Rustlers Gulch"),]
+Potentilla.counts.RG[(which.max(Potentilla.counts.RG$total_flowers)),1]
+#Converting dataframe cell to Julian date
+Pot.RG.max<-as.matrix(Potentilla.counts.RG[(which.max(Potentilla.counts.RG$total_flowers)),1])
+Pot.RG.max<-as.Date(Pot.RG.max)
+Pot.RG.max<-julian(Pot.RG.max,origin=as.Date("2019-01-01"))
+```
+
+```{r calculating Pot RG differences}
+#Finding difference between community peak and individual midpoints
+Potentilla.RG<-Potentilla.final[(Potentilla.final$site=="RustlersGulch"),]
+Potentilla.RG$relative.position<-(Potentilla.RG$julian.midpoint-Pot.RG.max)
+```
+
+###Stupid Falls
+
+```{r getting Pot SF community peak}
+#Finding date with max number of flowers
+Potentilla.counts.SF<-Potentilla.counts[(Potentilla.counts$site=="Stupid Falls"),]
+Potentilla.counts.SF[(which.max(Potentilla.counts.SF$total_flowers)),1]
+#Converting dataframe cell to Julian date
+Pot.SF.max<-as.matrix(Potentilla.counts.SF[(which.max(Potentilla.counts.SF$total_flowers)),1])
+Pot.SF.max<-as.Date(Pot.SF.max)
+Pot.SF.max<-julian(Pot.SF.max,origin=as.Date("2019-01-01"))
+```
+
+```{r calculating Pot SF differences}
+#Finding difference between community peak and individual midpoints
+Potentilla.SF<-Potentilla.final[(Potentilla.final$site=="StupidFalls"),]
+Potentilla.SF$relative.position<-(Potentilla.SF$julian.midpoint-Pot.SF.max)
+```
+
+###Wash 3C
+
+```{r getting Pot WG community peak}
+#Finding date with max number of flowers
+Potentilla.counts.WG<-Potentilla.counts[(Potentilla.counts$site=="Wash 3C"),]
+Potentilla.counts.WG[(which.max(Potentilla.counts.WG$total_flowers)),1]
+#Converting dataframe cell to Julian date
+Pot.WG.max<-as.matrix(Potentilla.counts.WG[(which.max(Potentilla.counts.WG$total_flowers)),1])
+Pot.WG.max<-as.Date(Pot.WG.max)
+Pot.WG.max<-julian(Pot.WG.max,origin=as.Date("2019-01-01"))
+```
+
+```{r calculating Pot WG differences}
+#Finding difference between community peak and individual midpoints
+Potentilla.WG<-Potentilla.final[(Potentilla.final$site=="WG3C"),]
+Potentilla.WG$relative.position<-(Potentilla.WG$julian.midpoint-Pot.WG.max)
+```
+
+##Putting it all Together
+
+```{r Pot merging}
+#Merging site data into final dataframe
+Potentilla.final2<-rbind(Potentilla.AP,Potentilla.BB,Potentilla.MR,Potentilla.PF,Potentilla.RG,Potentilla.SF,Potentilla.WG)
+head(Potentilla.final2)
+```
+
+```{r export Pot csv}
+write.csv(Potentilla.final2, "Potentilla_final2.csv")
+```
+
+#Delphinium
+
+##Data Cleaning
+
+```{r importing Delph data, message=FALSE,warning=FALSE}
+#Importing Delphinium Data
+Delphinium <- read_excel("~/Documents/BROSI/THESIS/Data Cleaning/Plant fitness.xlsx", 
+    sheet = "Delph nutt")
+```
+
+For the plant fitness component of the Delphinium data, we combined the developed seeds of the first flower and the developed seeds of the rest of the flowers. This gave us the total developed seeds per individual. 
+
+```{r plant fitness Delph calculations,results='hide'}
+#Fixing Seed Data
+Delphinium$dev.seed1[is.na(Delphinium$dev.seed1)]<- 0
+Delphinium$weight1[is.na(Delphinium$weight1)]<- 0
+Delphinium$total.seeds<-Delphinium$dev.seed1+Delphinium$dev.seed
+Delphinium$total.seed.weight<-Delphinium$weight1+Delphinium$weight.rest
+Delphinium$total.seed.weight<-as.numeric(Delphinium$total.seed.weight)
+round(Delphinium$total.seed.weight,digits=3)
+Delphinium$site[Delphinium$site=="Pfieler"]<-"Pfeiler"
+```
+
+And we added phenology estimates like last time...
+
+```{r adding Delph phenology estimates}
+#Adding Bloom Start and End Estimates
+Delphinium$start.estimate<-floor_date(Delphinium$bloom.start, "3 days")
+Delphinium$end.estimate<-floor_date(Delphinium$bloom.end, "3 days")
+head(Delphinium)
+```
+
+...and plotted the phenology and seed data...
+
+```{r plotting Delph phenology and seed set,message=FALSE, warning=FALSE}
+#Plotting Phenology and Seed Data for Fun
+library(ggplot2)
+ggplot(Delphinium,aes(x=Delphinium$start.estimate,y=Delphinium$total.seeds, group = plot.treat)) +
+  labs(y="Total Developed Seeds",x="Bloom Start Estimate",title="Delphinium") +
+  geom_point(aes(color=plot.treat,shape=treat),size=3, alpha = 0.8) +
+  geom_smooth(method = "lm",se=F,aes(color=plot.treat))
+```
+
+...then added soil moisture quads...
+
+```{r assigning soil moisture quads to Delph individual quads}
+#Creating a new variable
+Delphinium$soil.moist.quad<-factor(NA,levels = c("1","6","12","15","18","24","30"))
+#Assigning soil moisture quads to each individual quad
+Delphinium$soil.moist.quad[Delphinium$quad<5]<- "1"
+Delphinium$soil.moist.quad[Delphinium$quad>4 & Delphinium$quad<9]<- "6"
+Delphinium$soil.moist.quad[Delphinium$quad>8 & Delphinium$quad<14]<- "12"
+Delphinium$soil.moist.quad[Delphinium$quad>13 & Delphinium$quad<18]<- "15"
+Delphinium$soil.moist.quad[Delphinium$quad>17 & Delphinium$quad<22]<- "18"
+Delphinium$soil.moist.quad[Delphinium$quad>21 & Delphinium$quad<27]<- "24"
+Delphinium$soil.moist.quad[Delphinium$quad>26]<- "30"
+
+head(Delphinium)
+```
+
+...and finally merged soil moisture variables to Delphinium data.
+
+```{r merging soil moisture to Delph individuals}
+#Merging soil moisture variables to individuals
+Delphinium.final<-merge(soil.moist.final,Delphinium,
+                      by.x = c("site","plot.treat","quad"),by.y = c("site","plot.treat","soil.moist.quad"))
+#Excluding unnecessary columns
+Delphinium.final<-subset(Delphinium.final,select = -c(date.oe1,date.harvest,total.fruits,ovule.exp1,height,notes,quad))
+head(Delphinium.final)
+```
+
+Note: I couldn't exclude the #flowers or #fruit.collected column due to R syntax.
+
+##Phenology
+
+The flower counts spreadsheet is already loaded, but this time we focused on the Delphinium rows.
+
+```{r Delph sorting}
+#Limiting data to Delphinium counts in the control plot
+Delphinium.counts<-flower.counts[(flower.counts$plant=="Delphinium nuttallianum"),]
+Delphinium.counts<-Delphinium.counts[,1:7]
+Delphinium.counts<-na.omit(Delphinium.counts)
+Delphinium.counts<-Delphinium.counts[(Delphinium.counts$plot=="Control"),]
+```
+
+We again found the Julian date for the midpoint between the Delphinium bloom start and end estimates.
+
+```{r finding Delph midpoint}
+#Finding midpoint between start and end estimates
+Delphinium.final$midpoint<- Delphinium.final$bloom.start + floor((Delphinium.final$end.estimate-Delphinium.final$start.estimate)/2)
+#Converting midpoint to Julian date
+Delphinium.final$julian.midpoint<-julian(Delphinium.final$midpoint, origin = as.Date("2019-01-01"))
+```
+
+###Meridian
+
+Delphinium was set up in 4 sites. 
+
+```{r getting Delph MR community peak}
+#Finding date with max number of flowers
+Delphinium.counts.MR<-Delphinium.counts[(Delphinium.counts$site=="Meridian"),]
+Delphinium.counts.MR[(which.max(Delphinium.counts.MR$total_flowers)),1]
+#Converting dataframe cell to Julian date
+Delph.MR.max<-as.matrix(Delphinium.counts.MR[(which.max(Delphinium.counts.MR$total_flowers)),1])
+Delph.MR.max<-as.Date(Delph.MR.max)
+Delph.MR.max<-julian(Delph.MR.max,origin=as.Date("2019-01-01"))
+```
+
+```{r calculating Delph MR differences}
+#Finding difference between community peak and individual midpoints
+Delphinium.MR<-Delphinium.final[(Delphinium.final$site=="Meridian"),]
+Delphinium.MR$relative.position<-(Delphinium.MR$julian.midpoint-Delph.MR.max)
+```
+
+###Pfeiler
+
+```{r getting Delph PF community peak}
+#Finding date with max number of flowers
+Delphinium.counts.PF<-Delphinium.counts[(Delphinium.counts$site=="Pfeiler"),]
+Delphinium.counts.PF[(which.max(Delphinium.counts.PF$total_flowers)),1]
+#Converting dataframe cell to Julian date
+Delph.PF.max<-as.matrix(Delphinium.counts.PF[(which.max(Delphinium.counts.PF$total_flowers)),1])
+Delph.PF.max<-as.Date(Delph.PF.max)
+Delph.PF.max<-julian(Delph.PF.max,origin=as.Date("2019-01-01"))
+```
+
+```{r calculating Delph PF differences}
+#Finding difference between community peak and individual midpoints
+Delphinium.PF<-Delphinium.final[(Delphinium.final$site=="Pfeiler"),]
+Delphinium.PF$relative.position<-(Delphinium.PF$julian.midpoint-Delph.PF.max)
+```
+
+###Rustler's Gulch
+
+```{r getting Delph RG community peak}
+#Finding date with max number of flowers
+Delphinium.counts.RG<-Delphinium.counts[(Delphinium.counts$site=="Rustlers Gulch"),]
+Delphinium.counts.RG[(which.max(Delphinium.counts.RG$total_flowers)),1]
+#Converting dataframe cell to Julian date
+Delph.RG.max<-as.matrix(Delphinium.counts.RG[(which.max(Delphinium.counts.RG$total_flowers)),1])
+Delph.RG.max<-as.Date(Delph.RG.max)
+Delph.RG.max<-julian(Delph.RG.max,origin=as.Date("2019-01-01"))
+```
+
+```{r calculating Delph RG differences}
+#Finding difference between community peak and individual midpoints
+Delphinium.RG<-Delphinium.final[(Delphinium.final$site=="RustlersGulch"),]
+Delphinium.RG$relative.position<-(Delphinium.RG$julian.midpoint-Delph.RG.max)
+```
+
+###Wash 3C
+
+```{r getting Delph WG community peak}
+#Finding date with max number of flowers
+Delphinium.counts.WG<-Delphinium.counts[(Delphinium.counts$site=="Wash 3C"),]
+Delphinium.counts.WG[(which.max(Delphinium.counts.WG$total_flowers)),1]
+#Converting dataframe cell to Julian date
+Delph.WG.max<-as.matrix(Delphinium.counts.WG[(which.max(Delphinium.counts.WG$total_flowers)),1])
+Delph.WG.max<-as.Date(Delph.WG.max)
+Delph.WG.max<-julian(Delph.WG.max,origin=as.Date("2019-01-01"))
+```
+
+```{r calculating Delph WG differences}
+#Finding difference between community peak and individual midpoints
+Delphinium.WG<-Delphinium.final[(Delphinium.final$site=="WG3C"),]
+Delphinium.WG$relative.position<-(Delphinium.WG$julian.midpoint-Delph.WG.max)
+```
+
+##Putting it all Together
+
+```{r Delph merging}
+#Merging site data into final dataframe
+Delphinium.final2<-rbind(Delphinium.MR,Delphinium.PF,Delphinium.RG,Delphinium.WG)
+head(Delphinium.final2)
+```
+
+```{r export Delph csv}
+write.csv(Delphinium.final2, "Delphinium_final2.csv")
+```
+
