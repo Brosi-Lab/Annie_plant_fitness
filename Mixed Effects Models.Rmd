@@ -34,5 +34,3 @@ pot = read.csv("~/Documents/BROSI/THESIS/Data Cleaning/Potentilla_final2.csv") #
 Pot.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), family = poisson, data = pot, na.action = na.omit)
 summary(Pot.glmer)
 ```
-
-testing GitHub once more
