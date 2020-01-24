@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This is one document for all of my ongoing analyses. Other Markdown documents may be created from this document, but all of my data analysis is located in this central location.
 
-##Phenology Analyses
+## Phenology Analyses
 
 "Delph.glmer this is a name that you are assigning to the output of the model. It can basically be anything.
 
@@ -32,7 +32,7 @@ data = delph the dataset you are using. Note that I called it “delph” when i
 
 na.action = na.omit tells R to ignore any NA or missing values. You might have to go back and just remove them manually. Might want to check some of the particular values to make sure they are actually being interpreted as NAs by R, using the “is.na” function."
 
-###Delphinium
+### Delphinium
 
 ```{r Delphinium mixed effects model}
 #install.packages("lme4")
@@ -42,7 +42,7 @@ Delph.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), fam
 summary(Delph.glmer)
 ```
 
-###Mertensia
+### Mertensia
 
 ```{r Mertensia mixed effects model}
 #install.packages("lme4")
@@ -52,7 +52,7 @@ Mert.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), fami
 summary(Mert.glmer)
 ```
 
-###Potentilla
+### Potentilla
 
 ```{r Potentilla mixed effects model}
 #install.packages("lme4")
@@ -62,7 +62,7 @@ Pot.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), famil
 summary(Pot.glmer)
 ```
 
-#Soil Moisture Analyses
+# Soil Moisture Analyses
 
 We began by importing the seed data containing phenology estimates, soil moisture variables, and seed counts for every individual of Mertensia. We removed NAs from the seed count column.
 
