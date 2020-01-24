@@ -3,6 +3,8 @@ title: "Data_Analysis"
 author: "Annie Schiffer"
 date: "12/2/2019"
 output:
+  html_document:
+    df_print: paged
   pdf_document: default
 ---
 
@@ -37,7 +39,7 @@ na.action = na.omit tells R to ignore any NA or missing values. You might have t
 ```{r Delphinium mixed effects model}
 #install.packages("lme4")
 library(lme4) # this you need to do in every R session 
-delph = read.csv("~/Documents/BROSI/THESIS/Data Cleaning/Delphinium_final2.csv") # read in the data
+delph = read.csv("Delphinium_final2.csv") # read in the data
 Delph.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), family = poisson, data = delph, na.action = na.omit) # this is the model
 summary(Delph.glmer)
 ```
@@ -47,7 +49,7 @@ summary(Delph.glmer)
 ```{r Mertensia mixed effects model}
 #install.packages("lme4")
 library(lme4) # this you need to do in every R session 
-mert = read.csv("~/Documents/BROSI/THESIS/Data Cleaning/Mertensia_final2.csv") # read in the data
+mert = read.csv("Mertensia_final2.csv") # read in the data
 Mert.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), family = poisson, data = mert, na.action = na.omit) # this is the model
 summary(Mert.glmer)
 ```
@@ -57,7 +59,7 @@ summary(Mert.glmer)
 ```{r Potentilla mixed effects model}
 #install.packages("lme4")
 library(lme4) # this you need to do in every R session 
-pot = read.csv("~/Documents/BROSI/THESIS/Data Cleaning/Potentilla_final2.csv") # read in the data
+pot = read.csv("Potentilla_final2.csv") # read in the data
 Pot.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), family = poisson, data = pot, na.action = na.omit) # this is the model
 summary(Pot.glmer)
 ```
@@ -67,7 +69,7 @@ summary(Pot.glmer)
 We began by importing the seed data containing phenology estimates, soil moisture variables, and seed counts for every individual of Mertensia. We removed NAs from the seed count column.
 
 ```{r importing data}
-masterdata=read.csv("~/Documents/BROSI/THESIS/Data Cleaning/Mertensia_final.csv")
+masterdata=read.csv("Mertensia_final.csv")
 seed.data=masterdata[!is.na(masterdata$total.seeds),]
 ```
 
