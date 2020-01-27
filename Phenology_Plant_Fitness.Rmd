@@ -1,0 +1,108 @@
+---
+title: "Phenology and Plant Fitness"
+author: "Annie Schiffer"
+date: "started 27 January 2020; most recent edits `r format(Sys.time(), '%d %B %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    number_sections: true
+    code_folding: hide
+    theme: cosmo
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Overview
+
+This project aims to connect floral phenology to reproductive success on the individual level and landscape level for three subalpine plants. Data were collected at the Rocky Mountain Biological Laboratory during the 2019 field season. Focal species include Mertensia fusiformis, Potentilla pulcherrima, and Delphinium nuttalianum. 
+
+Our questions specifically ask: 
+  1. how does blooming time affect seed set for individiuals in a population?
+  2. how does blooming time of populations affect seed set compared to other populations in a landscape?
+  3. how does accelerated snowmelt affect phenology and seed set on the individual and population level?
+  
+Individuals of the three species were tagged in control and manipulated plots in eight sites across East River valley and Washington Gulch. Seed set was quantified as the count of total developed seeds in each individual. 
+
+Because there were sources of non-independence in this study, our statistical approach involves generalized linear mixed effects models. Before we ran these models, we converted phenological data to a "relative position" value that represents how many days before or after the community peak the individual was in bloom....
+
+# Load Packages
+
+```{r packages}
+suppressWarnings(suppressPackageStartupMessages(require(knitr)))
+suppressWarnings(suppressPackageStartupMessages(require(tidyverse)))
+suppressWarnings(suppressPackageStartupMessages(require(lme4)))
+```
+
+# Data Import & Basic Formatting
+
+The imported csv files contain the following for each individual of a species: bloom start and end estimates, relative position of blooming in the community, soil moisture variables, and seed counts. These elements were compiled from five different data sets and calculated in a separate document. To view the data cleaning process, refer to the data cleaning R Markdown file. 
+
+## Mertensia Data
+
+The first dataset contains the individual data for Mertensia fusiformis, which was found in four of our sites. No further data formatting is necessary.
+
+```{r Mertensia data import}
+mert = read.csv("Mertensia_final2.csv") # read in Mertensia data
+```
+
+## Delphinium Data
+
+The second dataset contains individual data for Delphinium nuttalianum. Delphinium was found in four of our sites. No further formatting is necessary. 
+
+```{r Delphinium data import}
+delph = read.csv("Delphinium_final2.csv") # read in Delphinium data
+```
+
+## Potentilla Data
+
+The third dataset contains Potentilla pulcherrima data. Potentilla was set up in all but one of our sites. 
+
+```{r Potentilla data import}
+pot = read.csv("Potentilla_final2.csv") # read in Potentilla data
+```
+
+Because many of the Potentilla individuals were still in bloom when we finished our field season, we could not calculate a midpoint and relative position for a portion of individuals.
+
+# Mixed Effects Models
+
+Generalized linear mixed effects models were appropriate for this analysis because the data contain sources of non-independence. Individual plants were located in the same site as other individuals and were likely genetically similar. Therefore, we considered site a random effect. 
+
+The response variable is total seeds, which is discrete and non-zero. Relative position and plot treatment were considered fixed effects. We are assuming Poisson errors for this analysis because the data are discrete counts. Each species is analyzed separately. 
+
+## Mertensia
+
+```{r Mertensia glmm}
+Mert.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), family = poisson, data = mert, na.action = na.omit) # Mertensia mixed effects model from the lme4 package
+summary(Mert.glmer) # summary of model output
+```
+
+The mixed effects model shows that neither the relative position nor the plot treatment signficantly impacted the seed production of Mertensia individuals. 
+
+## Delphinium
+
+```{r Delphinium glmm}
+Delph.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), family = poisson, data = delph, na.action = na.omit) # Delphinium mixed effects model from the lme4 package
+summary(Delph.glmer) # summary of model output
+```
+
+For Delphinium individuals, both relative position and plot treatment had some effect on seed set. (How do I know the directionality from these results?) 
+
+## Potentilla
+
+```{r Potentilla glmm}
+Pot.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), family = poisson, data = pot, na.action = na.omit) # Potentilla mixed effects model from the lme4 package
+summary(Pot.glmer) # summary of model output
+```
+
+Both plot treatment and relative position significantly affected seed set in Potentilla individuals.
+
+# Session Info
+
+```{r Session Info}
+sessionInfo()
+```
+
