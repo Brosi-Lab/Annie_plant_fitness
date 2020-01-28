@@ -35,6 +35,7 @@ Because there were sources of non-independence in this study, our statistical ap
 suppressWarnings(suppressPackageStartupMessages(require(knitr)))
 suppressWarnings(suppressPackageStartupMessages(require(tidyverse)))
 suppressWarnings(suppressPackageStartupMessages(require(lme4)))
+suppressWarnings(suppressPackageStartupMessages(require(ggplot2)))
 ```
 
 # Data Import & Basic Formatting
@@ -80,7 +81,13 @@ Mert.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), fami
 summary(Mert.glmer) # summary of model output
 ```
 
-The mixed effects model shows that neither the relative position nor the plot treatment signficantly impacted the seed production of Mertensia individuals. 
+The mixed effects model shows that neither the relative position nor the plot treatment signficantly impacted the seed production of Mertensia individuals. Below is the plot of seed set vs. relative position of blooming in the community for Mertensia individuals. Plot treatment is indicated by individual color, and treatment received (open or pollen-supplemented) is indicated by individual shape.
+
+```{r Mertensia plot}
+ggplot(mert, aes(x=mert$relative.position, y=mert$total.seeds, group= plot.treat)) +
+  labs(y="Total Developed Seeds",x="Relative Position in Community Phenology") +
+  geom_point(aes(color=plot.treat,shape=treat),size=3, alpha = 0.8)
+```
 
 ## Delphinium
 
@@ -89,7 +96,13 @@ Delph.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), fam
 summary(Delph.glmer) # summary of model output
 ```
 
-For Delphinium individuals, both relative position and plot treatment had some effect on seed set. (How do I know the directionality from these results?) 
+For Delphinium individuals, both relative position and plot treatment had some effect on seed set. (How do I know the directionality from these results?) Below is the same plot as above, except for the Delphinium individuals.
+
+```{r Delphinium plot}
+ggplot(delph, aes(x=delph$relative.position, y=delph$total.seeds, group= plot.treat)) +
+  labs(y="Total Developed Seeds",x="Relative Position in Community Phenology") +
+  geom_point(aes(color=plot.treat,shape=treat),size=3, alpha = 0.8)
+```
 
 ## Potentilla
 
@@ -98,7 +111,14 @@ Pot.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), famil
 summary(Pot.glmer) # summary of model output
 ```
 
-Both plot treatment and relative position significantly affected seed set in Potentilla individuals.
+Both plot treatment and relative position significantly affected seed set in Potentilla individuals. Below is the plot for Potentilla individuals.
+
+```{r Potentilla plot}
+ggplot(pot, aes(x=pot$relative.position, y=pot$total.seeds, group= plot.treat)) +
+  labs(y="Total Developed Seeds",x="Relative Position in Community Phenology") +
+  geom_point(aes(color=plot.treat,shape=treat),size=3, alpha = 0.8)
+```
+
 
 # Session Info
 
