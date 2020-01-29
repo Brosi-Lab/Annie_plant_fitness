@@ -64,6 +64,7 @@ The third dataset contains Potentilla pulcherrima data. Potentilla was set up in
 
 ```{r Potentilla data import}
 pot = read.csv("Potentilla_final2.csv") # read in Potentilla data
+pot<-pot[-119,] #removing one row with NA in treatment column
 ```
 
 Because many of the Potentilla individuals were still in bloom when we finished our field season, we could not calculate a midpoint and relative position for a portion of individuals.
@@ -85,7 +86,7 @@ The mixed effects model shows that neither the relative position nor the plot tr
 
 ```{r Mertensia plot}
 ggplot(mert, aes(x=mert$relative.position, y=mert$total.seeds)) +
-  labs(y="Total Developed Seeds",x="Relative Position in Community Phenology") +
+  labs(y="Total Developed Seeds",x="Relative Position in Population Phenology") +
   geom_point(aes(color=plot.treat,shape=treat),size=3, alpha = 0.8) +
   geom_smooth()
 ```
@@ -101,7 +102,7 @@ For Delphinium individuals, both relative position and plot treatment had some e
 
 ```{r Delphinium plot}
 ggplot(delph, aes(x=delph$relative.position, y=delph$total.seeds)) +
-  labs(y="Total Developed Seeds",x="Relative Position in Community Phenology") +
+  labs(y="Total Developed Seeds",x="Relative Position in Population Phenology") +
   geom_point(aes(color=plot.treat,shape=treat),size=3, alpha = 0.8) +
   geom_smooth() + ylim(-60,200)
 ```
@@ -117,7 +118,7 @@ Both plot treatment and relative position significantly affected seed set in Pot
 
 ```{r Potentilla plot}
 ggplot(pot, aes(x=pot$relative.position, y=pot$total.seeds)) +
-  labs(y="Total Developed Seeds",x="Relative Position in Community Phenology") +
+  labs(y="Total Developed Seeds",x="Relative Position in Population Phenology") +
   geom_point(aes(color=plot.treat,shape=treat),size=3, alpha = 0.8) +
   geom_smooth() + ylim(-20,600)
 ```
