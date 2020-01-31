@@ -36,6 +36,7 @@ suppressWarnings(suppressPackageStartupMessages(require(knitr)))
 suppressWarnings(suppressPackageStartupMessages(require(tidyverse)))
 suppressWarnings(suppressPackageStartupMessages(require(lme4)))
 suppressWarnings(suppressPackageStartupMessages(require(ggplot2)))
+suppressWarnings(suppressPackageStartupMessages(require(RColorBrewer)))
 ```
 
 # Data Import & Basic Formatting
@@ -101,10 +102,11 @@ summary(Delph.glmer) # summary of model output
 For Delphinium individuals, both relative position and plot treatment had some effect on seed set. (How do I know the directionality from these results?) Below is the same plot as above, except for the Delphinium individuals.
 
 ```{r Delphinium plot}
-ggplot(delph, aes(x=delph$relative.position, y=delph$total.seeds)) +
-  labs(y="Total Developed Seeds",x="Relative Position in Population Phenology") +
-  geom_point(aes(color=plot.treat,shape=treat),size=3, alpha = 0.8) +
-  geom_smooth() + ylim(-60,200)
+ggplot(delph, aes(x=delph$relative.position, y=delph$total.seeds, group=plot.treat)) +
+  labs(y="Total Developed Seeds",x="Days Relative to Population Peak Bloom") +
+  geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
+  scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
+  geom_smooth(method = "glm", formula= y~x) + ylim(-60,200)
 ```
 
 ## Potentilla
