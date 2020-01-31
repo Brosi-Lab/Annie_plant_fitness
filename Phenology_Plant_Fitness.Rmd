@@ -103,9 +103,10 @@ For Delphinium individuals, both relative position and plot treatment had some e
 
 ```{r Delphinium plot}
 ggplot(delph, aes(x=delph$relative.position, y=delph$total.seeds, group=plot.treat)) +
-  labs(y="Total Developed Seeds",x="Days Relative to Population Peak Bloom") +
+  labs(title="Effect of Delphinium Blooming Time on Seed Set", y="Total Developed Seeds",x="Days Relative to Population Peak Bloom") +
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
   scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
+  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkgreen","manip"="darkorange")) +
   geom_smooth(method = "glm", formula= y~x) + ylim(-60,200)
 ```
 
