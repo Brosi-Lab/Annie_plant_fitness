@@ -53,6 +53,8 @@ The first dataset contains the individual data for Mertensia fusiformis, which w
 mert = read.csv("Mertensia_final2.csv") # read in Mertensia data
 mert<-mert[!is.na(mert$total.seeds),] #removing NA values from Mertenia total seed column
 mert<-mert[!is.na(mert$relative.position),] #removing NA values from relative position column
+mert$prop.dev.seeds<-(mert$dev.seed/mert$total.seeds) #adding proportion of developed seeds
+mert<-mert[!is.na(mert$prop.dev.seeds),] #removing NA values from proportion column
 ```
 
 ## Delphinium Data
@@ -63,6 +65,8 @@ The second dataset contains individual data for Delphinium nuttalianum. Delphini
 delph = read.csv("Delphinium_final2.csv") # read in Delphinium data
 delph<-delph[!is.na(delph$total.seeds),] #removing NA values in seed column
 delph<-delph[!is.na(delph$relative.position),] #removing NA values in the relative position
+delph$prop.dev.seeds<-(delph$total.seeds/(delph$undev.seed1+delph$undev.seed+delph$total.seeds)) #adding proportion of developed seeds
+delph<-delph[!is.na(delph$prop.dev.seeds),] #removing NA values in proportion column
 ```
 
 ## Potentilla Data
@@ -76,7 +80,7 @@ pot<-pot[-119,] #removing one row with NA in treatment column
 
 Because many of the Potentilla individuals were still in bloom when we finished our field season, we could not calculate a midpoint and relative position for a portion of individuals.
 
-# Mixed Effects Models
+# Mixed Effects Models using Count Data
 
 Generalized linear mixed effects models were appropriate for this analysis because the data contain sources of non-independence. Individual plants were located in the same site as other individuals and were likely genetically similar. Therefore, we considered site a random effect. 
 
@@ -84,9 +88,11 @@ The response variable is total seeds, which is discrete and non-zero. Relative p
 
 ## Mertensia
 
+We started by checking the distribution of the total seed counts.
+
 ```{r checking Mertensia distribution}
-mert.nbinom<-fitdist(mert$total.seeds, "nbinom")
-plot(mert.nbinom)
+mert.nbinom<-fitdist(mert$total.seeds, "nbinom") #fitting Mertensia data to negative binomial distribution using fitdistplus
+plot(mert.nbinom) #plotting to see the fit
 ```
 
 The Mertensia seed data fits a negative binomial distribution. The glmmADMB package is the best for modeling data with a negative binomial fit.
@@ -104,8 +110,6 @@ Below is our first attempt at the mixed effects models without checking the dist
 #Mert.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), family = poisson, data = mert, na.action = na.omit) # Mertensia mixed effects model from the lme4 package
 #summary(Mert.glmer) # summary of model output
 ```
-
-The mixed effects model shows that neither the relative position nor the plot treatment signficantly impacted the seed production of Mertensia individuals. 
 
 Below is the plot of seed set vs. relative position of blooming in the community for Mertensia individuals. Plot treatment is indicated by individual color, and treatment received (open or pollen-supplemented) is indicated by individual shape.
 
@@ -166,6 +170,28 @@ ggplot(pot, aes(x=pot$relative.position, y=pot$total.seeds)) +
   geom_smooth() + ylim(-20,600)
 ```
 
+# Mixed Effects Model with Proportion Data
+
+Only the Mertensia and Delphinium data included proportion of developed seeds to total seeds. 
+
+## Mertensia
+
+```{r checking Mertensia proportion distribution}
+mert.prop.pois<-fitdist(mert$prop.dev.seeds, "pois")
+plot(mert.prop.pois)
+
+mert.prop.nbinom<-fitdist(mert$prop.dev.seeds, "nbinom") #fitting Mertensia data to negative binomial distribution using fitdistplus
+plot(mert.prop.nbinom) #plotting to see the fit
+```
+
+
+## Delphinium
+
+```{r checking Delphinium proportion distribution}
+plotdist(delph$prop.dev.seeds)
+delph.prop.pois<-fitdist(delph$prop.dev.seeds, "pois", method = "mle", start = )
+plot(delph.prop.pois)
+```
 
 # Session Info
 
