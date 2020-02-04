@@ -55,6 +55,7 @@ mert<-mert[!is.na(mert$total.seeds),] #removing NA values from Mertenia total se
 mert<-mert[!is.na(mert$relative.position),] #removing NA values from relative position column
 mert$prop.dev.seeds<-(mert$dev.seed/mert$total.seeds) #adding proportion of developed seeds
 mert<-mert[!is.na(mert$prop.dev.seeds),] #removing NA values from proportion column
+mert$absolute.position<-abs(mert$relative.position) #adding absolute value of relative position
 ```
 
 ## Delphinium Data
@@ -67,6 +68,7 @@ delph<-delph[!is.na(delph$total.seeds),] #removing NA values in seed column
 delph<-delph[!is.na(delph$relative.position),] #removing NA values in the relative position
 delph$prop.dev.seeds<-(delph$total.seeds/(delph$undev.seed1+delph$undev.seed+delph$total.seeds)) #adding proportion of developed seeds
 delph<-delph[!is.na(delph$prop.dev.seeds),] #removing NA values in proportion column
+delph$absolute.position<-abs(delph$relative.position) #adding absolute value of relative position
 ```
 
 ## Potentilla Data
@@ -184,13 +186,20 @@ mert.prop.nbinom<-fitdist(mert$prop.dev.seeds, "nbinom") #fitting Mertensia data
 plot(mert.prop.nbinom) #plotting to see the fit
 ```
 
-
 ## Delphinium
 
 ```{r checking Delphinium proportion distribution}
 plotdist(delph$prop.dev.seeds)
 delph.prop.pois<-fitdist(delph$prop.dev.seeds, "pois", method = "mle", start = )
 plot(delph.prop.pois)
+```
+
+# Mixed Effects Model using Absolute Value of Relative Position
+
+## Mertensia
+
+```{r checking absolute Mertensia dist}
+
 ```
 
 # Session Info
