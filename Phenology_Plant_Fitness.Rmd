@@ -37,6 +37,8 @@ suppressWarnings(suppressPackageStartupMessages(require(tidyverse)))
 suppressWarnings(suppressPackageStartupMessages(require(lme4)))
 suppressWarnings(suppressPackageStartupMessages(require(ggplot2)))
 suppressWarnings(suppressPackageStartupMessages(require(RColorBrewer)))
+suppressWarnings(suppressPackageStartupMessages(require(fitdistrplus)))
+suppressWarnings(suppressPackageStartupMessages(require(glmmADMB)))
 ```
 
 # Data Import & Basic Formatting
@@ -49,6 +51,8 @@ The first dataset contains the individual data for Mertensia fusiformis, which w
 
 ```{r Mertensia data import}
 mert = read.csv("Mertensia_final2.csv") # read in Mertensia data
+mert<-mert[!is.na(mert$total.seeds),] #removing NA values from Mertenia total seed column
+mert<-mert[!is.na(mert$relative.position),] #removing NA values from relative position column
 ```
 
 ## Delphinium Data
@@ -57,6 +61,8 @@ The second dataset contains individual data for Delphinium nuttalianum. Delphini
 
 ```{r Delphinium data import}
 delph = read.csv("Delphinium_final2.csv") # read in Delphinium data
+delph<-delph[!is.na(delph$total.seeds),] #removing NA values in seed column
+delph<-delph[!is.na(delph$relative.position),] #removing NA values in the relative position
 ```
 
 ## Potentilla Data
@@ -78,12 +84,30 @@ The response variable is total seeds, which is discrete and non-zero. Relative p
 
 ## Mertensia
 
-```{r Mertensia glmm}
-Mert.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), family = poisson, data = mert, na.action = na.omit) # Mertensia mixed effects model from the lme4 package
-summary(Mert.glmer) # summary of model output
+```{r checking Mertensia distribution}
+mert.nbinom<-fitdist(mert$total.seeds, "nbinom")
+plot(mert.nbinom)
 ```
 
-The mixed effects model shows that neither the relative position nor the plot treatment signficantly impacted the seed production of Mertensia individuals. Below is the plot of seed set vs. relative position of blooming in the community for Mertensia individuals. Plot treatment is indicated by individual color, and treatment received (open or pollen-supplemented) is indicated by individual shape.
+The Mertensia seed data fits a negative binomial distribution. The glmmADMB package is the best for modeling data with a negative binomial fit.
+
+```{r Mertensia glmmadmb}
+mert.glmmadmb<-glmmadmb(total.seeds ~ relative.position * plot.treat + (1|site), family = "nbinom2", data = mert) #Mertensia model for negative binomial data with glmmadmb package
+summary(mert.glmmadmb) #summary of model output
+```
+
+Treating plot treatment as a random effect or as a separate fixed effect didn't produce any significant results. The interaction between relative position and plot treatment also didn't produce significant results.
+
+Below is our first attempt at the mixed effects models without checking the distribution first.
+
+```{r Mertensia glmm}
+#Mert.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), family = poisson, data = mert, na.action = na.omit) # Mertensia mixed effects model from the lme4 package
+#summary(Mert.glmer) # summary of model output
+```
+
+The mixed effects model shows that neither the relative position nor the plot treatment signficantly impacted the seed production of Mertensia individuals. 
+
+Below is the plot of seed set vs. relative position of blooming in the community for Mertensia individuals. Plot treatment is indicated by individual color, and treatment received (open or pollen-supplemented) is indicated by individual shape.
 
 ```{r Mertensia plot}
 ggplot(mert, aes(x=mert$relative.position, y=mert$total.seeds)) +
@@ -93,6 +117,22 @@ ggplot(mert, aes(x=mert$relative.position, y=mert$total.seeds)) +
 ```
 
 ## Delphinium
+
+```{r checking Delphinium distribution}
+delph.nbinom<-fitdist(delph$total.seeds, "nbinom") #fitting negative binomial distribution using fitdistplus package
+plot(delph.nbinom) #plotting distribution fit
+```
+
+The Delphinium data fits a negative binomial distribution. We will use the glmmADMB package again.
+
+```{r Delphinium glmmADMB}
+delph.glmmadmb<-glmmadmb(total.seeds ~ relative.position * plot.treat + (1|site), family = "nbinom2", data = delph) #Delphinium model for negative binomial data with glmmadmb package
+summary(delph.glmmadmb) #summary of model output
+```
+
+The plot treatment as a random effect and a separate fixed effect produced no significant results. The interaction between relative position and plot treatment was slightly significant.
+
+Below is a previous attempt at modeling the data. We (incorrectly) used a model for Poisson-distributed data.
 
 ```{r Delphinium glmm}
 Delph.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), family = poisson, data = delph, na.action = na.omit) # Delphinium mixed effects model from the lme4 package
