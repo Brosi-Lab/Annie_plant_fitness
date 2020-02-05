@@ -55,7 +55,6 @@ mert<-mert[!is.na(mert$total.seeds),] #removing NA values from Mertenia total se
 mert<-mert[!is.na(mert$relative.position),] #removing NA values from relative position column
 mert$prop.dev.seeds<-(mert$dev.seed/mert$total.seeds) #adding proportion of developed seeds
 mert<-mert[!is.na(mert$prop.dev.seeds),] #removing NA values from proportion column
-mert$absolute.position<-abs(mert$relative.position) #adding absolute value of relative position
 ```
 
 ## Delphinium Data
@@ -64,11 +63,10 @@ The second dataset contains individual data for Delphinium nuttalianum. Delphini
 
 ```{r Delphinium data import}
 delph = read.csv("Delphinium_final2.csv") # read in Delphinium data
-delph<-delph[!is.na(delph$total.seeds),] #removing NA values in seed column
+#delph<-delph[!is.na(delph$total.seeds),] #removing NA values in seed column
 delph<-delph[!is.na(delph$relative.position),] #removing NA values in the relative position
-#delph$prop.dev.seeds<-(delph$total.seeds/(delph$undev.seed1+delph$undev.seed+delph$total.seeds)) #adding proportion of developed seeds
-#delph<-delph[!is.na(delph$prop.dev.seeds),] #removing NA values in proportion column
-#delph$absolute.position<-abs(delph$relative.position) #adding absolute value of relative position
+delph$prop.dev.seeds<-(delph$total.seeds/(delph$undev.seed1+delph$undev.seed+delph$total.seeds)) #adding proportion of developed seeds
+delph<-delph[!is.na(delph$prop.dev.seeds),] #removing NA values in proportion column
 ```
 
 ## Potentilla Data
@@ -106,13 +104,6 @@ summary(mert.glmmadmb) #summary of model output
 
 Treating plot treatment as a random effect or as a separate fixed effect didn't produce any significant results. The interaction between relative position and plot treatment also didn't produce significant results.
 
-Below is our first attempt at the mixed effects models without checking the distribution first.
-
-```{r Mertensia glmm}
-#Mert.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), family = poisson, data = mert, na.action = na.omit) # Mertensia mixed effects model from the lme4 package
-#summary(Mert.glmer) # summary of model output
-```
-
 Below is the plot of seed set vs. relative position of blooming in the community for Mertensia individuals. Plot treatment is indicated by individual color, and treatment received (open or pollen-supplemented) is indicated by individual shape.
 
 ```{r Mertensia plot}
@@ -138,14 +129,7 @@ summary(delph.glmmadmb) #summary of model output
 
 The plot treatment as a random effect and a separate fixed effect produced no significant results. The interaction between relative position and plot treatment was slightly significant.
 
-Below is a previous attempt at modeling the data. We (incorrectly) used a model for Poisson-distributed data.
-
-```{r Delphinium glmm}
-Delph.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), family = poisson, data = delph, na.action = na.omit) # Delphinium mixed effects model from the lme4 package
-summary(Delph.glmer) # summary of model output
-```
-
-For Delphinium individuals, both relative position and plot treatment had some effect on seed set. (How do I know the directionality from these results?) Below is the same plot as above, except for the Delphinium individuals.
+Below is the same plot for the Delphinium individuals.
 
 ```{r Delphinium plot}
 ggplot(delph, aes(x=delph$relative.position, y=delph$total.seeds, group=plot.treat)) +
@@ -179,36 +163,40 @@ Only the Mertensia and Delphinium data included proportion of developed seeds to
 ## Mertensia
 
 ```{r Mertensia undeveloped seeds}
-mert$undev.seeds<-(mert$total.seeds-mert$dev.seed)
+mert$undev.seeds<-(mert$total.seeds-mert$dev.seed) #creating an undeveloped seed column for cbind
 ```
 
 ```{r Mertensia proportion model}
-Mert.glmer<-glmer(cbind(dev.seed,undev.seeds) ~ relative.position + (1|site/plot.treat), family = binomial, data = mert)
+Mert.glmer<-glmer(cbind(dev.seed,undev.seeds) ~ relative.position + (1|site/plot.treat), family = binomial, data = mert) #Mertensia model with proportion of developed seeds using lme4 package
 summary(Mert.glmer)
 ```
 
 ```{r Mertensia plot}
-ggplot(mert, aes(x=mert$relative.position, y=mert$prop.dev.seeds)) +
+ggplot(mert, aes(x=mert$relative.position, y=mert$prop.dev.seeds, group=plot.treat)) +
   labs(y="Proportion of Developed Seeds",x="Relative Position in Population Phenology") +
-  geom_point(aes(color=plot.treat,shape=treat),size=3, alpha = 0.8) +
+  geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
+  scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
+  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkgreen","manip"="darkorange")) +
   geom_smooth()
 ```
 
 ## Delphinium
 
-```{r checking Delphinium proportion distribution}
-plotdist(delph$prop.dev.seeds)
-delph.prop.pois<-fitdist(delph$prop.dev.seeds, "pois", method = "mle", start = )
-plot(delph.prop.pois)
+```{r Delphinium proportion model}
+delph$dev.seed.total<-delph$dev.seed+delph$dev.seed1 #creating developed seeds column
+delph$undev.seed.total<-delph$undev.seed+delph$undev.seed1 #creating undeveloped seeds column
+Delph.glmer<-glmer(cbind(dev.seed.total,undev.seed.total) ~ relative.position + (1|site/plot.treat), family = binomial, data = delph) #modeling Delphinium proportion of developed seeds with lme4 package
+summary(Delph.glmer)
 ```
 
-# Mixed Effects Model using Absolute Value of Relative Position
-
-## Mertensia
-
-```{r Mertensia gam}
-
+```{r Delphinium proportion plot}
+ggplot(delph, aes(x=delph$relative.position, y=delph$prop.dev.seeds, group=plot.treat)) +
+  labs(title="Effect of Delphinium Blooming Time on Seed Set", y="Proportion of Developed Seeds",x="Days Relative to Population Peak") +
+  geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
+  scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
+  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkgreen","manip"="darkorange")) + geom_smooth()
 ```
+
 
 # Session Info
 
