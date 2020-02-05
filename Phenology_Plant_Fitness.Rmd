@@ -66,9 +66,9 @@ The second dataset contains individual data for Delphinium nuttalianum. Delphini
 delph = read.csv("Delphinium_final2.csv") # read in Delphinium data
 delph<-delph[!is.na(delph$total.seeds),] #removing NA values in seed column
 delph<-delph[!is.na(delph$relative.position),] #removing NA values in the relative position
-delph$prop.dev.seeds<-(delph$total.seeds/(delph$undev.seed1+delph$undev.seed+delph$total.seeds)) #adding proportion of developed seeds
-delph<-delph[!is.na(delph$prop.dev.seeds),] #removing NA values in proportion column
-delph$absolute.position<-abs(delph$relative.position) #adding absolute value of relative position
+#delph$prop.dev.seeds<-(delph$total.seeds/(delph$undev.seed1+delph$undev.seed+delph$total.seeds)) #adding proportion of developed seeds
+#delph<-delph[!is.na(delph$prop.dev.seeds),] #removing NA values in proportion column
+#delph$absolute.position<-abs(delph$relative.position) #adding absolute value of relative position
 ```
 
 ## Potentilla Data
@@ -100,7 +100,7 @@ plot(mert.nbinom) #plotting to see the fit
 The Mertensia seed data fits a negative binomial distribution. The glmmADMB package is the best for modeling data with a negative binomial fit.
 
 ```{r Mertensia glmmadmb}
-mert.glmmadmb<-glmmadmb(total.seeds ~ relative.position * plot.treat + (1|site), family = "nbinom2", data = mert) #Mertensia model for negative binomial data with glmmadmb package
+mert.glmmadmb<-glmmadmb(total.seeds ~ relative.position  + (1|site/plot.treat), family = "nbinom2", data = mert) #Mertensia model for negative binomial data with glmmadmb package
 summary(mert.glmmadmb) #summary of model output
 ```
 
@@ -153,7 +153,7 @@ ggplot(delph, aes(x=delph$relative.position, y=delph$total.seeds, group=plot.tre
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
   scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
   scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkgreen","manip"="darkorange")) +
-  geom_smooth(method = "glm", formula= y~x) + ylim(-60,200)
+  geom_smooth() + ylim(-60,200)
 ```
 
 ## Potentilla
@@ -178,12 +178,20 @@ Only the Mertensia and Delphinium data included proportion of developed seeds to
 
 ## Mertensia
 
-```{r checking Mertensia proportion distribution}
-mert.prop.pois<-fitdist(mert$prop.dev.seeds, "pois")
-plot(mert.prop.pois)
+```{r Mertensia undeveloped seeds}
+mert$undev.seeds<-(mert$total.seeds-mert$dev.seed)
+```
 
-mert.prop.nbinom<-fitdist(mert$prop.dev.seeds, "nbinom") #fitting Mertensia data to negative binomial distribution using fitdistplus
-plot(mert.prop.nbinom) #plotting to see the fit
+```{r Mertensia proportion model}
+Mert.glmer<-glmer(cbind(dev.seed,undev.seeds) ~ relative.position + (1|site/plot.treat), family = binomial, data = mert)
+summary(Mert.glmer)
+```
+
+```{r Mertensia plot}
+ggplot(mert, aes(x=mert$relative.position, y=mert$prop.dev.seeds)) +
+  labs(y="Proportion of Developed Seeds",x="Relative Position in Population Phenology") +
+  geom_point(aes(color=plot.treat,shape=treat),size=3, alpha = 0.8) +
+  geom_smooth()
 ```
 
 ## Delphinium
@@ -198,7 +206,7 @@ plot(delph.prop.pois)
 
 ## Mertensia
 
-```{r checking absolute Mertensia dist}
+```{r Mertensia gam}
 
 ```
 
