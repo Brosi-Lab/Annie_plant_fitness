@@ -109,7 +109,9 @@ Below is the plot of seed set vs. relative position of blooming in the community
 ```{r Mertensia plot}
 ggplot(mert, aes(x=mert$relative.position, y=mert$total.seeds)) +
   labs(y="Total Developed Seeds",x="Relative Position in Population Phenology") +
-  geom_point(aes(color=plot.treat,shape=treat),size=3, alpha = 0.8) +
+  geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
+  scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
+  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkgreen","manip"="darkorange")) +
   geom_smooth()
 ```
 
@@ -127,7 +129,7 @@ delph.glmmadmb<-glmmadmb(total.seeds ~ relative.position * plot.treat + (1|site)
 summary(delph.glmmadmb) #summary of model output
 ```
 
-The plot treatment as a random effect and a separate fixed effect produced no significant results. The interaction between relative position and plot treatment was slightly significant.
+The plot treatment as a random effect and a separate fixed effect produced no significant results. The relative position was slightly significant.
 
 Below is the same plot for the Delphinium individuals.
 
