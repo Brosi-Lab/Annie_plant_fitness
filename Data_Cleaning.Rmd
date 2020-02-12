@@ -228,7 +228,7 @@ Next, we loaded the Mertensia individuals data and found the midpoint between th
 
 ```{r finding Mertensia midpoint}
 #Finding midpoint between start and end estimates
-Mertensia.final$midpoint<- Mertensia.final$bloom.start + floor((Mertensia.final$end.estimate-Mertensia.final$start.estimate)/2)
+Mertensia.final$midpoint<- Mertensia.final$start.estimate + floor((Mertensia.final$end.estimate-Mertensia.final$start.estimate)/2)
 #Converting midpoint to Julian date
 Mertensia.final$julian.midpoint<-julian(Mertensia.final$midpoint, origin = as.Date("2019-01-01"))
 ```
@@ -402,14 +402,30 @@ Potentilla.counts<-na.omit(Potentilla.counts)
 Potentilla.counts<-Potentilla.counts[(Potentilla.counts$plot=="Control"),]
 ```
 
+There were many Potentilla individuals without an end date. To fix this problem, we estimated the end date. We first found the days per flower for the senesced individuals, then used the number of flowers for the missing individuals to estimate the duration of their blooming time. Once we had the duration, we could estimate the bloom end, midpoint, and ultimately the relative position.
+
+```{r Potentilla data manipulation}
+Potentilla.final$duration<-difftime(Potentilla.final$end.estimate, Potentilla.final$start.estimate, units = c("days")) #calculating duration for individuals that senesced
+Potentilla.final$number.flowers<-Potentilla.final$`#flowers` 
+Potentilla.final$days.per.flower<-Potentilla.final$duration/Potentilla.final$number.flowers #calculating days per flower
+Potentilla.final$duration.modified<-Potentilla.final$number.flowers *
+  mean(Potentilla.final$days.per.flower, na.rm= TRUE) #estimating duration of individuals with missing end estimates
+Potentilla.final$duration.modified<-floor(Potentilla.final$duration.modified) #rounding to nearest day
+Potentilla.final$end.estimate.modified<-as.Date(Potentilla.final$start.estimate) + Potentilla.final$duration.modified #adding duration to start estimate
+Potentilla.final$end.estimate<-ifelse(is.na(Potentilla.final$end.estimate), Potentilla.final$end.estimate.modified, Potentilla.final$end.estimate) #combining columns
+Potentilla$final$end.estimate<-as_date(Potentilla.final$end.estimate,origin = "2019-01-01")
+```
+
 We again found the Julian date for the midpoint between the Potentilla bloom start and end estimates.
 
 ```{r finding Potentilla midpoint}
 #Finding midpoint between start and end estimates
-Potentilla.final$midpoint<- Potentilla.final$bloom.start + floor((Potentilla.final$end.estimate-Potentilla.final$start.estimate)/2)
+Potentilla.final$midpoint<- Potentilla.final$start.estimate + floor((Potentilla.final$end.estimate-Potentilla.final$start.estimate)/2)
 #Converting midpoint to Julian date
 Potentilla.final$julian.midpoint<-julian(Potentilla.final$midpoint, origin = as.Date("2019-01-01"))
 ```
+
+
 
 ###Avery Picnic
 
@@ -640,7 +656,7 @@ We again found the Julian date for the midpoint between the Delphinium bloom sta
 
 ```{r finding Delph midpoint}
 #Finding midpoint between start and end estimates
-Delphinium.final$midpoint<- Delphinium.final$bloom.start + floor((Delphinium.final$end.estimate-Delphinium.final$start.estimate)/2)
+Delphinium.final$midpoint<- Delphinium.final$start.estimate + floor((Delphinium.final$end.estimate-Delphinium.final$start.estimate)/2)
 #Converting midpoint to Julian date
 Delphinium.final$julian.midpoint<-julian(Delphinium.final$midpoint, origin = as.Date("2019-01-01"))
 ```

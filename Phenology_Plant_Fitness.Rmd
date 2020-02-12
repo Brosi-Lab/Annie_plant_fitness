@@ -78,9 +78,10 @@ pot = read.csv("Potentilla_final2.csv") # read in Potentilla data
 pot<-pot[-119,] #removing one row with NA in treatment column
 ```
 
-Because many of the Potentilla individuals were still in bloom when we finished our field season, we could not calculate a midpoint and relative position for a portion of individuals.
+Because many of the Potentilla individuals were still in bloom when we finished our field season, we had to calculate a midpoint and relative position based on those individuals that had senesced. A key factor that determines duration of blooming is the number of flowers on the individual. The data imported includes those relative position estimates for the individuals that didn't senesce before we finished our field season. For more information on how those numbers were calculated, see Data_Cleaning.Rmd.
 
-# Mixed Effects Models using Count Data
+
+# Mixed Effects Models with Count Data
 
 Generalized linear mixed effects models were appropriate for this analysis because the data contain sources of non-independence. Individual plants were located in the same site as other individuals and were likely genetically similar. Therefore, we considered site a random effect. 
 
