@@ -412,15 +412,15 @@ Potentilla.final$duration.modified<-Potentilla.final$number.flowers *
   mean(Potentilla.final$days.per.flower, na.rm= TRUE) #estimating duration of individuals with missing end estimates
 Potentilla.final$duration.modified<-floor(Potentilla.final$duration.modified) #rounding to nearest day
 Potentilla.final$end.estimate.modified<-as.Date(Potentilla.final$start.estimate) + Potentilla.final$duration.modified #adding duration to start estimate
-Potentilla.final$end.estimate<-ifelse(is.na(Potentilla.final$end.estimate), Potentilla.final$end.estimate.modified, Potentilla.final$end.estimate) #combining columns
-Potentilla$final$end.estimate<-as_date(Potentilla.final$end.estimate,origin = "2019-01-01")
+Potentilla.final$end.estimate<-as.Date(ifelse(is.na(Potentilla.final$end.estimate), Potentilla.final$end.estimate.modified, Potentilla.final$end.estimate)) #compiling the calculated end estimates and actual end estimates
 ```
 
 We again found the Julian date for the midpoint between the Potentilla bloom start and end estimates.
 
 ```{r finding Potentilla midpoint}
 #Finding midpoint between start and end estimates
-Potentilla.final$midpoint<- Potentilla.final$start.estimate + floor((Potentilla.final$end.estimate-Potentilla.final$start.estimate)/2)
+Potentilla.final$midpoint<- Potentilla.final$start.estimate + floor((as.POSIXct(Potentilla.final$end.estimate, format= "%Y-%m-%d")-Potentilla.final$start.estimate)/2)
+
 #Converting midpoint to Julian date
 Potentilla.final$julian.midpoint<-julian(Potentilla.final$midpoint, origin = as.Date("2019-01-01"))
 ```
