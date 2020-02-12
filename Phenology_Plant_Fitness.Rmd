@@ -54,7 +54,6 @@ mert = read.csv("Mertensia_final2.csv") # read in Mertensia data
 mert<-mert[!is.na(mert$total.seeds),] #removing NA values from Mertenia total seed column
 mert<-mert[!is.na(mert$relative.position),] #removing NA values from relative position column
 mert$prop.dev.seeds<-(mert$dev.seed/mert$total.seeds) #adding proportion of developed seeds
-mert<-mert[!is.na(mert$prop.dev.seeds),] #removing NA values from proportion column
 ```
 
 ## Delphinium Data
@@ -63,10 +62,9 @@ The second dataset contains individual data for Delphinium nuttalianum. Delphini
 
 ```{r Delphinium data import}
 delph = read.csv("Delphinium_final2.csv") # read in Delphinium data
-#delph<-delph[!is.na(delph$total.seeds),] #removing NA values in seed column
+delph<-delph[!is.na(delph$total.seeds),] #removing NA values in seed column
 delph<-delph[!is.na(delph$relative.position),] #removing NA values in the relative position
 delph$prop.dev.seeds<-(delph$total.seeds/(delph$undev.seed1+delph$undev.seed+delph$total.seeds)) #adding proportion of developed seeds
-delph<-delph[!is.na(delph$prop.dev.seeds),] #removing NA values in proportion column
 ```
 
 ## Potentilla Data
@@ -76,6 +74,8 @@ The third dataset contains Potentilla pulcherrima data. Potentilla was set up in
 ```{r Potentilla data import}
 pot = read.csv("Potentilla_final2.csv") # read in Potentilla data
 pot<-pot[-119,] #removing one row with NA in treatment column
+pot<-pot[!is.na(pot$relative.position),] #removing NA values in relative position
+pot<-pot[!is.na(pot$total.seeds),] #removing NA values in total seeds column
 ```
 
 Because many of the Potentilla individuals were still in bloom when we finished our field season, we had to calculate a midpoint and relative position based on those individuals that had senesced. A key factor that determines duration of blooming is the number of flowers on the individual. The data imported includes those relative position estimates for the individuals that didn't senesce before we finished our field season. For more information on how those numbers were calculated, see Data_Cleaning.Rmd.
@@ -126,7 +126,7 @@ plot(delph.nbinom) #plotting distribution fit
 The Delphinium data fits a negative binomial distribution. We will use the glmmADMB package again.
 
 ```{r Delphinium glmmADMB}
-delph.glmmadmb<-glmmadmb(total.seeds ~ relative.position * plot.treat + (1|site), family = "nbinom2", data = delph) #Delphinium model for negative binomial data with glmmadmb package
+delph.glmmadmb<-glmmadmb(total.seeds ~ relative.position + (1|site/plot.treat), family = "nbinom2", data = delph) #Delphinium model for negative binomial data with glmmadmb package
 summary(delph.glmmadmb) #summary of model output
 ```
 
@@ -140,23 +140,30 @@ ggplot(delph, aes(x=delph$relative.position, y=delph$total.seeds, group=plot.tre
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
   scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
   scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkgreen","manip"="darkorange")) +
-  geom_smooth() + ylim(-60,200)
+  geom_smooth()
 ```
 
 ## Potentilla
 
+```{r checking Potentilla distribution}
+pot.nbinom<-fitdist(pot$total.seeds, "nbinom") #fitting negative binomial distribution using fitdistplus package
+plot(pot.nbinom) #plotting distribution fit
+```
+
 ```{r Potentilla glmm}
-Pot.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), family = poisson, data = pot, na.action = na.omit) # Potentilla mixed effects model from the lme4 package
-summary(Pot.glmer) # summary of model output
+pot.glmmadmb<-glmmadmb(total.seeds ~ relative.position + (1|site/plot.treat), family = "nbinom2", data = pot) #Potentilla model for negative binomial data with glmmadmb package
+summary(pot.glmmadmb) #summary of model output
 ```
 
 Both plot treatment and relative position significantly affected seed set in Potentilla individuals. Below is the plot for Potentilla individuals.
 
 ```{r Potentilla plot}
-ggplot(pot, aes(x=pot$relative.position, y=pot$total.seeds)) +
-  labs(y="Total Developed Seeds",x="Relative Position in Population Phenology") +
-  geom_point(aes(color=plot.treat,shape=treat),size=3, alpha = 0.8) +
-  geom_smooth() + ylim(-20,600)
+ggplot(pot, aes(x=pot$relative.position, y=pot$total.seeds, group=plot.treat)) +
+  labs(title="Effect of Potentilla Blooming Time on Seed Set", y="Total Developed Seeds",x="Days Relative to Population Peak Bloom") +
+  geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
+  scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
+  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkgreen","manip"="darkorange")) +
+  geom_smooth()
 ```
 
 # Mixed Effects Model with Proportion Data
@@ -175,6 +182,8 @@ summary(Mert.glmer)
 ```
 
 ```{r Mertensia plot}
+mert<-mert[!is.na(mert$prop.dev.seeds),] #removing NA values from proportion column
+
 ggplot(mert, aes(x=mert$relative.position, y=mert$prop.dev.seeds, group=plot.treat)) +
   labs(y="Proportion of Developed Seeds",x="Relative Position in Population Phenology") +
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
@@ -188,16 +197,19 @@ ggplot(mert, aes(x=mert$relative.position, y=mert$prop.dev.seeds, group=plot.tre
 ```{r Delphinium proportion model}
 delph$dev.seed.total<-delph$dev.seed+delph$dev.seed1 #creating developed seeds column
 delph$undev.seed.total<-delph$undev.seed+delph$undev.seed1 #creating undeveloped seeds column
+
 Delph.glmer<-glmer(cbind(dev.seed.total,undev.seed.total) ~ relative.position + (1|site/plot.treat), family = binomial, data = delph) #modeling Delphinium proportion of developed seeds with lme4 package
 summary(Delph.glmer)
 ```
 
 ```{r Delphinium proportion plot}
+delph<-delph[!is.na(delph$prop.dev.seeds),] #removing NA values in proportion column
 ggplot(delph, aes(x=delph$relative.position, y=delph$prop.dev.seeds, group=plot.treat)) +
   labs(title="Effect of Delphinium Blooming Time on Seed Set", y="Proportion of Developed Seeds",x="Days Relative to Population Peak") +
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
   scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
-  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkgreen","manip"="darkorange")) + geom_smooth()
+  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkgreen","manip"="darkorange")) + 
+  geom_smooth()
 ```
 
 
