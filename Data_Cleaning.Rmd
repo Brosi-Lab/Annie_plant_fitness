@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Our end goal in cleaning this data is to create a document containing the following for each individual of a species: bloom start estimate, bloom end estimate, soil moisture measures, and seed counts.
 
-#Soil Moisture
+# Soil Moisture
 
 We began by evaluating soil moisture as a covariate. We had to first determine which soil moisture measure (mean, peak moisture, range, etc.) was most correlated with the seed data. Before we calculated any soil moisture measure, we first wanted to visualize the data with week on the x-axis and % volumetric water content on the y-axis.
 
@@ -129,9 +129,9 @@ head(soil.moist.final)
 #write.csv(soil.moist.final,"Soil_Moisture_by_Site.csv")
 ```
 
-#Mertensia
+# Mertensia
 
-##Data Cleaning
+## Data Cleaning
 
 We began data cleaning with Mertensia fusiformis because we had clear seed counts for total developed seeds. Additionally, very few individual plants were missing bloom start or end dates.
 
@@ -202,7 +202,7 @@ Mertensia.final<-subset(Mertensia.final,select = -c(date.oe1,date.harvest,total.
 head(Mertensia.final)
 ```
 
-##Phenology
+## Getting Relative Position: Control Plot Peak as Population Peak
 
 We started by importing the flower count data from the snowmelt plant spreadsheet, and we included data only from 2019.
 
@@ -218,10 +218,10 @@ Again, we started with Mertensia. The community peak is based on the maximum num
 
 ```{r sorting Mertensia}
 #Limiting data to Mertensia counts in the control plot
-Mertensia.counts<-flower.counts[(flower.counts$plant=="Mertensia fusiformis"),]
-Mertensia.counts<-Mertensia.counts[,1:7]
-Mertensia.counts<-na.omit(Mertensia.counts)
-Mertensia.counts<-Mertensia.counts[(Mertensia.counts$plot=="Control"),]
+Mert.counts<-flower.counts[(flower.counts$plant=="Mertensia fusiformis"),]
+Mert.counts<-Mert.counts[,1:7]
+Mert.counts<-na.omit(Mert.counts)
+Mert.counts.control<-Mert.counts[(Mert.counts$plot=="Control"),]
 ```
 
 Next, we loaded the Mertensia individuals data and found the midpoint between the bloom start and bloom end date. This date was also coverted to Julian date.
@@ -233,18 +233,16 @@ Mertensia.final$midpoint<- Mertensia.final$start.estimate + floor((Mertensia.fin
 Mertensia.final$julian.midpoint<-julian(Mertensia.final$midpoint, origin = as.Date("2019-01-01"))
 ```
 
-###Stupid Falls
+### Stupid Falls
 
 We found the community peak in each site by retrieving the date associated with the max number of flowers recorded. That date was then converted to Julian date. To begin, we looked at the Stupid Falls data. 
 
 ```{r getting Mertensia SF community peak}
 #Finding date with max number of flowers
-Mertensia.counts.SF<-Mertensia.counts[(Mertensia.counts$site=="Stupid Falls"),]
-Mertensia.counts.SF[(which.max(Mertensia.counts.SF$total_flowers)),1]
+Mert.counts.control.SF<-Mert.counts.control[(Mert.counts.control$site=="Stupid Falls"),]
+Mert.counts.control.SF[(which.max(Mert.counts.control.SF$total_flowers)),1]
 #Converting dataframe cell to Julian date
-Mert.SF.max<-as.matrix(Mertensia.counts.SF[(which.max(Mertensia.counts.SF$total_flowers)),1])
-Mert.SF.max<-as.Date(Mert.SF.max)
-Mert.SF.max<-julian(Mert.SF.max,origin=as.Date("2019-01-01"))
+Mert.SF.control.max<-julian(as.Date(as.matrix(Mert.counts.control.SF[(which.max(Mert.counts.control.SF$total_flowers)),1])),origin=as.Date("2019-01-01"))
 ```
 
 Specifically looking at the midpoints for Stupid Falls individuals, we calculated the difference in days between the midpoints and the community peak.
@@ -252,61 +250,55 @@ Specifically looking at the midpoints for Stupid Falls individuals, we calculate
 ```{r calculating Mertensia SF differences}
 #Finding difference between community peak and individual midpoints
 Mertensia.SF<-Mertensia.final[(Mertensia.final$site=="StupidFalls"),]
-Mertensia.SF$relative.position<-(Mertensia.SF$julian.midpoint-Mert.SF.max)
+Mertensia.SF$relative.position<-(Mertensia.SF$julian.midpoint-Mert.SF.control.max)
 ```
 
 This process was repeated for every site with Mertensia.
 
-###Wash 3C
+### Wash 3C
 
 ```{r getting Mertensia WG community peak}
-Mertensia.counts.WG<-Mertensia.counts[(Mertensia.counts$site=="Wash 3C"),]
-Mertensia.counts.WG[(which.max(Mertensia.counts.WG$total_flowers)),1]
-Mert.WG.max<-as.matrix(Mertensia.counts.WG[(which.max(Mertensia.counts.WG$total_flowers)),1])
-Mert.WG.max<-as.Date(Mert.WG.max)
-Mert.WG.max<-julian(Mert.WG.max,origin=as.Date("2019-01-01"))
+Mert.counts.control.WG<-Mert.counts.control[(Mert.counts.control$site=="Wash 3C"),]
+Mert.counts.control.WG[(which.max(Mert.counts.control.WG$total_flowers)),1]
+Mert.WG.control.max<-julian(as.Date(as.matrix(Mert.counts.control.WG[(which.max(Mert.counts.control.WG$total_flowers)),1])),origin=as.Date("2019-01-01"))
 ```
 
 ```{r calculating Mertensia WG differences}
 Mertensia.WG<-Mertensia.final[(Mertensia.final$site=="WG3C"),]
-Mertensia.WG$relative.position<-(Mertensia.WG$julian.midpoint-Mert.WG.max)
+Mertensia.WG$relative.position<-(Mertensia.WG$julian.midpoint-Mert.WG.control.max)
 ```
 
-###Pfeiler
+### Pfeiler
 
 ```{r getting Mertensia PF community peak}
-Mertensia.counts.PF<-Mertensia.counts[(Mertensia.counts$site=="Pfeiler"),]
-Mertensia.counts.PF[(which.max(Mertensia.counts.PF$total_flowers)),1]
-Mert.PF.max<-as.matrix(Mertensia.counts.PF[(which.max(Mertensia.counts.PF$total_flowers)),1])
-Mert.PF.max<-as.Date(Mert.PF.max)
-Mert.PF.max<-julian(Mert.PF.max,origin=as.Date("2019-01-01"))
+Mert.counts.control.PF<-Mert.counts.control[(Mert.counts.control$site=="Pfeiler"),]
+Mert.counts.control.PF[(which.max(Mert.counts.control.PF$total_flowers)),1]
+Mert.PF.control.max<-julian(as.Date(as.matrix(Mert.counts.control.PF[(which.max(Mert.counts.control.PF$total_flowers)),1])),origin=as.Date("2019-01-01"))
 ```
 
 ```{r calculating Mertensia PF differences}
 Mertensia.PF<-Mertensia.final[(Mertensia.final$site=="Pfeiler"),]
-Mertensia.PF$relative.position<-(Mertensia.PF$julian.midpoint-Mert.PF.max)
+Mertensia.PF$relative.position<-(Mertensia.PF$julian.midpoint-Mert.PF.control.max)
 ```
 
-###Avery Picnic
+### Avery Picnic
 
 ```{r getting Mertensia AP community peak}
-Mertensia.counts.AP<-Mertensia.counts[(Mertensia.counts$site=="Avery Picnic"),]
-Mertensia.counts.AP[(which.max(Mertensia.counts.AP$total_flowers)),1]
-Mert.AP.max<-as.matrix(Mertensia.counts.AP[(which.max(Mertensia.counts.AP$total_flowers)),1])
-Mert.AP.max<-as.Date(Mert.AP.max)
-Mert.AP.max<-julian(Mert.AP.max,origin=as.Date("2019-01-01"))
+Mert.counts.control.AP<-Mert.counts.control[(Mert.counts.control$site=="Avery Picnic"),]
+Mert.counts.control.AP[(which.max(Mert.counts.control.AP$total_flowers)),1]
+Mert.AP.control.max<-julian(as.Date(as.matrix(Mert.counts.control.AP[(which.max(Mert.counts.control.AP$total_flowers)),1])),origin=as.Date("2019-01-01"))
 ```
 
 ```{r calculating Mertensia AP differences}
 Mertensia.AP<-Mertensia.final[(Mertensia.final$site=="AveryPicnic"),]
-Mertensia.AP$relative.position<-(Mertensia.AP$julian.midpoint-Mert.AP.max)
+Mertensia.AP$relative.position<-(Mertensia.AP$julian.midpoint-Mert.AP.control.max)
 ```
 
-##Putting it all Together
+### Putting it all Together
 
 ```{r merging Mertensia}
 #Merging site data into final dataframe
-Mertensia.final2<-rbind(Mertensia.AP,Mertensia.PF,Mertensia.SF,Mertensia.WG)
+Mertensia.final2<-rbind(Mertensia.PF,Mertensia.AP,Mertensia.SF,Mertensia.WG)
 head(Mertensia.final2)
 ```
 
@@ -314,12 +306,40 @@ head(Mertensia.final2)
 write.csv(Mertensia.final2, "Mertensia_final2.csv")
 ```
 
+## Getting Relative Position: Separate Control and Manip Population Peaks
+
+If we wanted to look use the manipulated plot peak for manipulated Mertensia individuals, we would separate the flower counts into manipulated and control plots.
+
+```{r separating manip and control}
+Mert.counts.manip<-Mertensia.counts[(Mertensia.counts$plot=="Manipulated"),]
+```
+
+### Stupid Falls
+
+```{r getting Mertensia SF control and manip peaks}
+#Finding date with max number of flowers
+Mert.counts.SF.manip<-Mert.counts.manip[(Mert.counts.manip$site=="Stupid Falls"),]
+Mert.counts.SF.manip[(which.max(Mert.counts.SF.manip$total_flowers)),1]
+
+#Converting dataframe cell to Julian date
+Mert.SF.manip.max<-julian(as.Date(as.matrix(Mert.counts.SF.manip[(which.max(Mert.counts.SF.manip$total_flowers)),1])),origin=as.Date("2019-01-01"))
+```
+
+```{r Mert SF relative position}
+Mert.SF.control<-Mertensia.final[(Mertensia.final$site=="StupidFalls") & (Mertensia.final$plot.treat=="control"),]
+
+Mert.SF.manip<-Mertensia.final[(Mertensia.final$site=="StupidFalls") & (Mertensia.final$plot.treat=="manip"),]
+
+Mert.SF.control$relative.position<-(Mertensia.SF$julian.midpoint-Mert.SF.control.max)
+Mert.SF.manip$relative.position<-(Mertensia.SF$julian.midpoint-Mert.SF.manip.max)
+
+Mert.SF.modified.peaks<-rbind(Mert.SF.control,Mert.SF.manip)
+```
+
 And now we repeat all of this for Potentilla!
+# Potentilla
 
-
-#Potentilla
-
-##Data Cleaning
+## Data Cleaning
 
 ```{r importing Potentilla data, message=FALSE,warning=FALSE}
 #Importing Potentilla Data
