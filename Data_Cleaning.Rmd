@@ -303,7 +303,7 @@ head(Mertensia.final2)
 ```
 
 ```{r export Mertensia csv}
-write.csv(Mertensia.final2, "Mertensia_final2.csv")
+#write.csv(Mertensia.final2, "Mertensia_final2.csv")
 ```
 
 ## Getting Relative Position: Separate Control and Manip Population Peaks
@@ -311,29 +311,29 @@ write.csv(Mertensia.final2, "Mertensia_final2.csv")
 If we wanted to look use the manipulated plot peak for manipulated Mertensia individuals, we would separate the flower counts into manipulated and control plots.
 
 ```{r separating manip and control}
-Mert.counts.manip<-Mertensia.counts[(Mertensia.counts$plot=="Manipulated"),]
+#Mert.counts.manip<-Mertensia.counts[(Mertensia.counts$plot=="Manipulated"),]
 ```
 
 ### Stupid Falls
 
 ```{r getting Mertensia SF control and manip peaks}
 #Finding date with max number of flowers
-Mert.counts.SF.manip<-Mert.counts.manip[(Mert.counts.manip$site=="Stupid Falls"),]
-Mert.counts.SF.manip[(which.max(Mert.counts.SF.manip$total_flowers)),1]
+#Mert.counts.SF.manip<-Mert.counts.manip[(Mert.counts.manip$site=="Stupid Falls"),]
+#Mert.counts.SF.manip[(which.max(Mert.counts.SF.manip$total_flowers)),1]
 
 #Converting dataframe cell to Julian date
-Mert.SF.manip.max<-julian(as.Date(as.matrix(Mert.counts.SF.manip[(which.max(Mert.counts.SF.manip$total_flowers)),1])),origin=as.Date("2019-01-01"))
+#Mert.SF.manip.max<-julian(as.Date(as.matrix(Mert.counts.SF.manip[(which.max(Mert.counts.SF.manip$total_flowers)),1])),origin=as.Date("2019-01-01"))
 ```
 
 ```{r Mert SF relative position}
-Mert.SF.control<-Mertensia.final[(Mertensia.final$site=="StupidFalls") & (Mertensia.final$plot.treat=="control"),]
+#Mert.SF.control<-Mertensia.final[(Mertensia.final$site=="StupidFalls") & (Mertensia.final$plot.treat=="control"),]
 
-Mert.SF.manip<-Mertensia.final[(Mertensia.final$site=="StupidFalls") & (Mertensia.final$plot.treat=="manip"),]
+#Mert.SF.manip<-Mertensia.final[(Mertensia.final$site=="StupidFalls") & (Mertensia.final$plot.treat=="manip"),]
 
-Mert.SF.control$relative.position<-(Mertensia.SF$julian.midpoint-Mert.SF.control.max)
+#Mert.SF.control$relative.position<-(Mertensia.SF$julian.midpoint-Mert.SF.control.max)
 Mert.SF.manip$relative.position<-(Mertensia.SF$julian.midpoint-Mert.SF.manip.max)
 
-Mert.SF.modified.peaks<-rbind(Mert.SF.control,Mert.SF.manip)
+#Mert.SF.modified.peaks<-rbind(Mert.SF.control,Mert.SF.manip)
 ```
 
 And now we repeat all of this for Potentilla!
@@ -432,7 +432,7 @@ Potentilla.final$duration.modified<-Potentilla.final$number.flowers *
   mean(Potentilla.final$days.per.flower, na.rm= TRUE) #estimating duration of individuals with missing end estimates
 Potentilla.final$duration.modified<-floor(Potentilla.final$duration.modified) #rounding to nearest day
 Potentilla.final$end.estimate.modified<-as.Date(Potentilla.final$start.estimate) + Potentilla.final$duration.modified #adding duration to start estimate
-Potentilla.final$end.estimate<-as.Date(ifelse(is.na(Potentilla.final$end.estimate), Potentilla.final$end.estimate.modified, Potentilla.final$end.estimate)) #compiling the calculated end estimates and actual end estimates
+Potentilla.final$end.estimate<-as.Date(ifelse(is.na(Potentilla.final$end.estimate), Potentilla.final$end.estimate.modified, Potentilla.final$end.estimate), origin= "2019-01-01") #compiling the calculated end estimates and actual end estimates
 ```
 
 We again found the Julian date for the midpoint between the Potentilla bloom start and end estimates.
@@ -764,6 +764,6 @@ head(Delphinium.final2)
 ```
 
 ```{r export Delph csv}
-write.csv(Delphinium.final2, "Delphinium_final2.csv")
+#write.csv(Delphinium.final2, "Delphinium_final2.csv")
 ```
 
