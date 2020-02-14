@@ -39,6 +39,7 @@ suppressWarnings(suppressPackageStartupMessages(require(ggplot2)))
 suppressWarnings(suppressPackageStartupMessages(require(RColorBrewer)))
 suppressWarnings(suppressPackageStartupMessages(require(fitdistrplus)))
 suppressWarnings(suppressPackageStartupMessages(require(glmmADMB)))
+suppressWarnings(suppressPackageStartupMessages(require(MuMIn)))
 ```
 
 # Data Import & Basic Formatting
@@ -73,7 +74,7 @@ The third dataset contains Potentilla pulcherrima data. Potentilla was set up in
 
 ```{r Potentilla data import}
 pot = read.csv("Potentilla_final2.csv") # read in Potentilla data
-pot<-pot[-119,] #removing one row with NA in treatment column
+pot<-pot[c(-119,-223),] #removing one row with NA in treatment column
 pot<-pot[!is.na(pot$relative.position),] #removing NA values in relative position
 pot<-pot[!is.na(pot$total.seeds),] #removing NA values in total seeds column
 ```
@@ -214,80 +215,33 @@ ggplot(delph, aes(x=delph$relative.position, y=delph$prop.dev.seeds, group=plot.
 
 # Mixed Effects Models: Effect of Soil Moisture Variables on Total Seeds
 
-To understand which variables are most influential for seed production, we will run a generalized linear mixed model with all of the soil moisture variables. Site and plot treatment are random effects, while the soil moisture variables are fixed effects. The family is negative binomial because the data have a negative binomial distribution.
+To understand which variables are most influential for seed production, we will run a generalized linear mixed model with all of the soil moisture variables. Site, plot treatment, and species are random effects, while the soil moisture variables are fixed effects. Once we have this model, we will run the dredge function to find the most appropriate combination of variables is correct for our larger model.
 
-## Mertensia
-
-```{r glmmADMB for soil moisture and Mertensia}
-mert = read.csv("Mertensia_final2.csv") # read in Mertensia data
-mert<-mert[!is.na(mert$total.seeds),] #removing NA values from Mertenia total seed column
-mert.soil <- glmmadmb(total.seeds ~ mean+rate+effect.min+end+range+(1|site/plot.treat), family = "nbinom2", data = mert) #model to test effect of soil moisture variables on seeds using glmmADMB
-summary(mert.soil)
+```{r combining all of the seed data}
+condensed.mert<-mert[,c(-1,-19:-22,-29)] #removing unnecessary columns
+condensed.delph<-delph[,c(-1,-19:-27,-29,-35)]
+condensed.pot<-pot[,c(-1,-19:-27,-29,-32:-36)]
+all.seeds<-rbind(condensed.mert,condensed.delph,condensed.pot) #combining all of the data sets
 ```
 
-## Delphinium
-
-```{r glmmADMB for soil moisture and Delphinium}
-delph = read.csv("Delphinium_final2.csv") # read in Delphinium data
-delph<-delph[!is.na(delph$total.seeds),] #removing NA values from Delphinium total seed column
-delph.soil <- glmmadmb(total.seeds ~ mean+rate+effect.min+end+range+(1|site/plot.treat), family = "nbinom2", data = delph) #model to test effect of soil moisture variables on seeds using glmmADMB
-summary(delph.soil)
+```{r checking distribution for all seed data}
+all.seed.nbinom<-fitdist(all.seeds$total.seeds, "nbinom") #fitting Mertensia data to negative binomial distribution using fitdistplus
+plot(all.seed.nbinom) #plotting to see the fit
 ```
 
-## Potentilla
-
-```{r glmmADMB for soil moisture and Potentilla}
-pot = read.csv("Potentilla_final2.csv") # read in Potentilla data
-pot<-pot[!is.na(pot$total.seeds),] #removing NA values from Potentilla total seed column
-pot.soil <- glmmadmb(total.seeds ~ mean+rate+effect.min+end+range+(1|site/plot.treat), family = "nbinom2", data = pot) #model to test effect of soil moisture variables on seeds using glmmADMB
-summary(pot.soil)
+```{r soil model with glmmadmb}
+soil.mod<-glmmadmb(total.seeds ~ mean + rate + effect.min + end + range + (1|site/plot.treat) + (1|species), family = "nbinom2", data = all.seeds) #model for soil moisture variables with all seeds
+summary(soil.mod)
 ```
 
-# Mixed Effects Models: Effect of Soil Moisture Variables on Proportion of Seeds
-
-## Mertensia
-
-```{r glmmADMB for soil moisture and Mertensia proportions}
-mert$prop.dev.seeds<-(mert$dev.seed/mert$total.seeds) #adding proportion of developed seeds
-mert<-mert[!is.na(mert$prop.dev.seeds),] #removing NA values from proportion column
-
-mert.prop.soil <- glmmadmb(prop.dev.seeds ~ mean+rate+effect.min+end+range+(1|site/plot.treat), family = "nbinom2", data = mert) #model to test effect of soil moisture variables on proportion of developed seeds using glmmADMB
-summary(mert.prop.soil)
+```{r model selection with dredge}
+dredge_result<-dredge(soil.mod) #using dredge funciton for model selection
+subset(dredge_result, delta<4)
 ```
 
-## Delphinium
+The null model was the best for these data. None of the combinations of soil moisture variables were selected for predicting the data. As a result, we won't include soil moisture as a fixed effect in our final model.
 
-```{r glmmADMB for soil moisture and Delphinium proportions}
-delph$prop.dev.seeds<-(delph$total.seeds/(delph$undev.seed1+delph$undev.seed+delph$total.seeds)) #adding proportion of developed seeds
-delph<-delph[!is.na(delph$prop.dev.seeds),] #removing NA values from proportion column
 
-delph.prop.soil <- glmmadmb(prop.dev.seeds ~ mean+rate+effect.min+end+range+(1|site/plot.treat), family = "nbinom2", data = delph) #model to test effect of soil moisture variables on proportion of developed seeds using glmmADMB
-summary(delph.prop.soil)
-```
-
-# Mixed Effects Models with Pollen Limitation Treatment
-
-## Mertensia
-
-```{r glmmADMB for mert pollen limitation}
-mert.pollen.lim <- glmmadmb(total.seeds ~ treat + (1|site/plot.treat), family = "nbinom2", data = mert) #model to test effect of pollen limitation treatment on seeds using glmmADMB
-summary(mert.pollen.lim)
-```
-
-## Delphinium
-
-```{r glmmADMB for delph pollen limitation}
-delph.pollen.lim <- glmmadmb(total.seeds ~ treat + (1|site/plot.treat), family = "nbinom2", data = delph) #model to test effect of pollen limitation treatment on seeds using glmmADMB
-summary(delph.pollen.lim)
-```
-
-## Potentilla
-
-```{r glmmADMB for pot pollen limitation}
-pot<-pot[!is.na(pot$treat),] 
-pot.pollen.lim <- glmmadmb(total.seeds ~ treat + (1|site/plot.treat), family = "nbinom2", data = pot) #model to test effect of pollen limitation treatment on seeds using glmmADMB
-summary(pot.pollen.lim)
-```
 
 # Session Info
 
