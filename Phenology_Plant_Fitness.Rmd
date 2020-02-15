@@ -31,6 +31,10 @@ Because there were sources of non-independence in this study, our statistical ap
 
 # Load Packages
 
+```{r clearing environment}
+rm(list = ls())
+```
+
 ```{r packages}
 suppressWarnings(suppressPackageStartupMessages(require(knitr)))
 suppressWarnings(suppressPackageStartupMessages(require(tidyverse)))
@@ -44,49 +48,92 @@ suppressWarnings(suppressPackageStartupMessages(require(MuMIn)))
 
 # Data Import & Basic Formatting
 
-The imported csv files contain the following for each individual of a species: bloom start and end estimates, relative position of blooming in the community, soil moisture variables, and seed counts. These elements were compiled from five different data sets and calculated in a separate document. To view the data cleaning process, refer to the data cleaning R Markdown file. 
+The imported csv files contain the following for each individual of a species: bloom start and end estimates, relative position of blooming in the community, soil moisture variables, and seed counts. These elements were compiled from five different data sets and calculated in a separate document. To view the data cleaning process, refer to the data cleaning R Markdown file, Data_Cleaning.Rmd. 
 
 ## Mertensia Data
 
-The first dataset contains the individual data for Mertensia fusiformis, which was found in four of our sites. No further data formatting is necessary.
+The first dataset contains the individual data for Mertensia fusiformis, which was found in four of our sites. For Mertensia, we calculated the proportion of developed seeds in addition to the seed counts. We also reformatted the relative position as a deviation variable (the absolute value of the relative position) and a early/late variable (the direction of the relative position).
 
 ```{r Mertensia data import}
 mert = read.csv("Mertensia_final2.csv") # read in Mertensia data
 mert<-mert[!is.na(mert$total.seeds),] #removing NA values from Mertenia total seed column
 mert<-mert[!is.na(mert$relative.position),] #removing NA values from relative position column
 mert$prop.dev.seeds<-(mert$dev.seed/mert$total.seeds) #adding proportion of developed seeds
+mert$deviation<-abs(mert$relative.position) #getting deviation from the peak
+mert$early.late<-factor(NA, levels = c("early","late")) #creating early/late variables based on relative position
+mert$early.late[mert$relative.position<0]<-"early"
+mert$early.late[mert$relative.position>0]<-"late"
 ```
 
 ## Delphinium Data
 
-The second dataset contains individual data for Delphinium nuttalianum. Delphinium was found in four of our sites. No further formatting is necessary. 
+The second dataset contains individual data for Delphinium nuttalianum. Delphinium was found in four of our sites. For Delphinium, we calculated proportion, deviation, and early/late value like we did with the Mertensia data. 
 
 ```{r Delphinium data import}
 delph = read.csv("Delphinium_final2.csv") # read in Delphinium data
 delph<-delph[!is.na(delph$total.seeds),] #removing NA values in seed column
 delph<-delph[!is.na(delph$relative.position),] #removing NA values in the relative position
 delph$prop.dev.seeds<-(delph$total.seeds/(delph$undev.seed1+delph$undev.seed+delph$total.seeds)) #adding proportion of developed seeds
+delph$deviation<-abs(delph$relative.position) #getting deviation from the peak
+delph$early.late<-factor(NA, levels = c("early","late")) #creating early/late variables based on relative position
+delph$early.late[delph$relative.position<0]<-"early"
+delph$early.late[delph$relative.position>0]<-"late"
 ```
 
 ## Potentilla Data
 
-The third dataset contains Potentilla pulcherrima data. Potentilla was set up in all but one of our sites. 
+The third dataset contains Potentilla pulcherrima data. Potentilla was set up in all but one of our sites. Potentilla data only includes total seed counts because we couldn't count the undeveloped seeds. However, we calculated the deviation and early/late values like the previous species.
 
 ```{r Potentilla data import}
 pot = read.csv("Potentilla_final2.csv") # read in Potentilla data
 pot<-pot[c(-119,-223),] #removing one row with NA in treatment column
 pot<-pot[!is.na(pot$relative.position),] #removing NA values in relative position
 pot<-pot[!is.na(pot$total.seeds),] #removing NA values in total seeds column
+pot$deviation<-abs(pot$relative.position) #getting deviation from the peak
+pot$early.late<-factor(NA, levels = c("early","late")) #creating early/late variables based on relative position
+pot$early.late[pot$relative.position<0]<-"early"
+pot$early.late[pot$relative.position>0]<-"late"
 ```
 
 Because many of the Potentilla individuals were still in bloom when we finished our field season, we had to calculate a midpoint and relative position based on those individuals that had senesced. A key factor that determines duration of blooming is the number of flowers on the individual. The data imported includes those relative position estimates for the individuals that didn't senesce before we finished our field season. For more information on how those numbers were calculated, see Data_Cleaning.Rmd.
 
+# Mixed Effects Models: Effect of Soil Moisture Variables on Total Seeds
+
+Soil moisture is a covariate that may impact seed production. In the field, we measured soil moisture in designated areas of the plot once per week, for 9 weeks. To understand which variables representing change in soil moisture are most influential for seed production, we will run a generalized linear mixed model with all of the soil moisture variables. Site, plot treatment, and species are random effects, while the soil moisture variables (mean moisture, rate of change, effective minimum or value at week 7, final moisture reading, and range) are fixed effects. Once we have this model, we will run the dredge function to find the most appropriate combination of variables for our larger model.
+
+We are including all of the individuals of the three species and using species as a random effect.
+
+```{r combining all of the seed data}
+condensed.mert<-mert[,c(-1,-19:-22,-29)] #removing unnecessary columns
+condensed.delph<-delph[,c(-1,-19:-27,-29,-35)]
+condensed.pot<-pot[,c(-1,-19:-27,-29,-32:-36)]
+all.seeds<-rbind(condensed.mert,condensed.delph,condensed.pot) #combining all of the data sets
+```
+
+```{r checking distribution for all seed data}
+all.seed.nbinom<-fitdist(all.seeds$total.seeds, "nbinom") #fitting Mertensia data to negative binomial distribution using fitdistplus
+plot(all.seed.nbinom) #plotting to see the fit
+```
+
+The seeds fit a negative binomial distribution, so we will use the glmmADMB package.
+
+```{r soil model with glmmadmb}
+soil.mod<-glmmadmb(total.seeds ~ mean + rate + effect.min + end + range + (1|site/plot.treat) + (1|species), family = "nbinom2", data = all.seeds) #model for soil moisture variables with all seeds
+summary(soil.mod)
+```
+
+```{r model selection with dredge}
+dredge_result<-dredge(soil.mod) #using dredge funciton for model selection
+subset(dredge_result, delta<4)
+```
+
+The null model was the best for these data. None of the combinations of soil moisture variables were selected for predicting the data. As a result, we won't include soil moisture as a fixed effect in our final model.
 
 # Mixed Effects Models with Count Data
 
 Generalized linear mixed effects models were appropriate for this analysis because the data contain sources of non-independence. Individual plants were located in the same site as other individuals and were likely genetically similar. Therefore, we considered site a random effect. 
 
-The response variable is total seeds, which is discrete and non-zero. Relative position and plot treatment were considered fixed effects. We are assuming Poisson errors for this analysis because the data are discrete counts. Each species is analyzed separately. 
+The response variable is total seeds, which is discrete and non-zero. The interaction between deviation and the early/late factor was a fixed effect, as well as pollen limitation treatment and the interaction between plot treatment and conspecific density. We would have included soil moisture as a covariate and fixed effect in our model, but soil moisture was not important for seed production. Each species is analyzed separately. 
 
 ## Mertensia
 
@@ -99,7 +146,7 @@ plot(mert.nbinom) #plotting to see the fit
 
 The Mertensia seed data fits a negative binomial distribution. The glmmADMB package is the best for modeling data with a negative binomial fit.
 
-```{r Mertensia glmmadmb}
+```{r Mertensia glmmadmb with relative position}
 mert.glmmadmb<-glmmadmb(total.seeds ~ relative.position  + (1|site/plot.treat), family = "nbinom2", data = mert) #Mertensia model for negative binomial data with glmmadmb package
 summary(mert.glmmadmb) #summary of model output
 ```
@@ -115,6 +162,17 @@ ggplot(mert, aes(x=mert$relative.position, y=mert$total.seeds)) +
   scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
   scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkgreen","manip"="darkorange")) +
   geom_smooth()
+```
+
+Now we'll try with the interaction between deviation and early/late instead of relative position in order to fit a linear model.
+
+```{r Mertensia plot substituting relative position}
+ggplot(mert, aes(x=mert$deviation, y=mert$total.seeds, group= mert$early.late)) +
+  labs(y="Total Developed Seeds",x="Relative Position in Population Phenology") +
+  geom_point(size=3, alpha = 0.8) +
+  scale_color_brewer(palette="Dark2") + labs(color="Early or Late") +
+  scale_color_manual(labels= c("early","late"), values = c("early"="darkgreen","late"="darkorange")) +
+  geom_smooth(method="glm",aes(color=early.late),yintercept=mean(mert$total.seeds[mert$deviation==0]))
 ```
 
 ## Delphinium
@@ -144,6 +202,15 @@ ggplot(delph, aes(x=delph$relative.position, y=delph$total.seeds, group=plot.tre
   geom_smooth()
 ```
 
+```{r delphinium plot substituting relative position}
+ggplot(delph, aes(x=delph$deviation, y=delph$total.seeds, group= delph$early.late)) +
+  labs(y="Total Developed Seeds",x="Relative Position in Population Phenology") +
+  geom_point(size=3, alpha = 0.8) +
+  scale_color_brewer(palette="Dark2") + labs(color="Early or Late") +
+  scale_color_manual(labels= c("early","late"), values = c("early"="darkgreen","late"="darkorange")) +
+  geom_smooth(method="glm",aes(color=early.late),yintercept=mean(delph$total.seeds[delph$deviation==0]))
+```
+
 ## Potentilla
 
 ```{r checking Potentilla distribution}
@@ -165,6 +232,15 @@ ggplot(pot, aes(x=pot$relative.position, y=pot$total.seeds, group=plot.treat)) +
   scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
   scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkgreen","manip"="darkorange")) +
   geom_smooth()
+```
+
+```{r potentilla plot substituting relative position}
+ggplot(pot, aes(x=pot$deviation, y=pot$total.seeds, group= pot$early.late)) +
+  labs(y="Total Developed Seeds",x="Relative Position in Population Phenology") +
+  geom_point(size=3, alpha = 0.8) +
+  scale_color_brewer(palette="Dark2") + labs(color="Early or Late") +
+  scale_color_manual(labels= c("early","late"), values = c("early"="darkgreen","late"="darkorange")) +
+  geom_smooth(method="glm",aes(color=early.late),yintercept=mean(pot$total.seeds[pot$deviation==0]))
 ```
 
 # Mixed Effects Model with Proportion Data
@@ -212,35 +288,6 @@ ggplot(delph, aes(x=delph$relative.position, y=delph$prop.dev.seeds, group=plot.
   scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkgreen","manip"="darkorange")) + 
   geom_smooth()
 ```
-
-# Mixed Effects Models: Effect of Soil Moisture Variables on Total Seeds
-
-To understand which variables are most influential for seed production, we will run a generalized linear mixed model with all of the soil moisture variables. Site, plot treatment, and species are random effects, while the soil moisture variables are fixed effects. Once we have this model, we will run the dredge function to find the most appropriate combination of variables is correct for our larger model.
-
-```{r combining all of the seed data}
-condensed.mert<-mert[,c(-1,-19:-22,-29)] #removing unnecessary columns
-condensed.delph<-delph[,c(-1,-19:-27,-29,-35)]
-condensed.pot<-pot[,c(-1,-19:-27,-29,-32:-36)]
-all.seeds<-rbind(condensed.mert,condensed.delph,condensed.pot) #combining all of the data sets
-```
-
-```{r checking distribution for all seed data}
-all.seed.nbinom<-fitdist(all.seeds$total.seeds, "nbinom") #fitting Mertensia data to negative binomial distribution using fitdistplus
-plot(all.seed.nbinom) #plotting to see the fit
-```
-
-```{r soil model with glmmadmb}
-soil.mod<-glmmadmb(total.seeds ~ mean + rate + effect.min + end + range + (1|site/plot.treat) + (1|species), family = "nbinom2", data = all.seeds) #model for soil moisture variables with all seeds
-summary(soil.mod)
-```
-
-```{r model selection with dredge}
-dredge_result<-dredge(soil.mod) #using dredge funciton for model selection
-subset(dredge_result, delta<4)
-```
-
-The null model was the best for these data. None of the combinations of soil moisture variables were selected for predicting the data. As a result, we won't include soil moisture as a fixed effect in our final model.
-
 
 
 # Session Info
