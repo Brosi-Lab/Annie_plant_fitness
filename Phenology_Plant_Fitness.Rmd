@@ -97,6 +97,15 @@ pot$early.late[pot$relative.position>0]<-"late"
 
 Because many of the Potentilla individuals were still in bloom when we finished our field season, we had to calculate a midpoint and relative position based on those individuals that had senesced. A key factor that determines duration of blooming is the number of flowers on the individual. The data imported includes those relative position estimates for the individuals that didn't senesce before we finished our field season. For more information on how those numbers were calculated, see Data_Cleaning.Rmd.
 
+## Flower Count Data
+
+```{r importing flower counts}
+flower.counts=read.csv("flower_counts.csv") #read in flower count data
+mert.flower.counts<-flower.counts[(flower.counts$plant=="Mertensia fusiformis"),] #limit flower counts to Mertensia data
+aggregate(x=mert.flower.counts$total_flowers,by=list(mert.flower.counts$date,mert.flower.counts$site),FUN="mean") #calculate mean flower counts by week and site
+mert$conspecifics<-
+```
+
 # Mixed Effects Models: Effect of Soil Moisture Variables on Total Seeds
 
 Soil moisture is a covariate that may impact seed production. In the field, we measured soil moisture in designated areas of the plot once per week, for 9 weeks. To understand which variables representing change in soil moisture are most influential for seed production, we will run a generalized linear mixed model with all of the soil moisture variables. Site, plot treatment, and species are random effects, while the soil moisture variables (mean moisture, rate of change, effective minimum or value at week 7, final moisture reading, and range) are fixed effects. Once we have this model, we will run the dredge function to find the most appropriate combination of variables for our larger model.

@@ -212,6 +212,7 @@ flower.counts<-read_excel("~/Documents/BROSI/THESIS/Data Cleaning/snowmelt_plant
     sheet = "plant_survey")
 #Excluding data from other years
 flower.counts<-flower.counts[c(2659:10715),]
+#write.csv(flower.counts, "flower_counts.csv")
 ```
 
 Again, we started with Mertensia. The community peak is based on the maximum number of flowers in the control plot in each site. 
