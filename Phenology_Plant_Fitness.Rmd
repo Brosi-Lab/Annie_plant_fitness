@@ -64,6 +64,7 @@ mert$deviation<-abs(mert$relative.position) #getting deviation from the peak
 mert$early.late<-factor(NA, levels = c("early","late")) #creating early/late variables based on relative position
 mert$early.late[mert$relative.position<0]<-"early"
 mert$early.late[mert$relative.position>0]<-"late"
+mert<-mert[!is.na(mert$early.late),] #is this right???
 ```
 
 ## Delphinium Data
@@ -79,6 +80,7 @@ delph$deviation<-abs(delph$relative.position) #getting deviation from the peak
 delph$early.late<-factor(NA, levels = c("early","late")) #creating early/late variables based on relative position
 delph$early.late[delph$relative.position<0]<-"early"
 delph$early.late[delph$relative.position>0]<-"late"
+delph<-delph[!is.na(delph$early.late),] #still not sure this is right
 ```
 
 ## Potentilla Data
@@ -94,6 +96,7 @@ pot$deviation<-abs(pot$relative.position) #getting deviation from the peak
 pot$early.late<-factor(NA, levels = c("early","late")) #creating early/late variables based on relative position
 pot$early.late[pot$relative.position<0]<-"early"
 pot$early.late[pot$relative.position>0]<-"late"
+pot<-pot[!is.na(pot$early.late),] #still not sure
 ```
 
 Because many of the Potentilla individuals were still in bloom when we finished our field season, we had to calculate a midpoint and relative position based on those individuals that had senesced. A key factor that determines duration of blooming is the number of flowers on the individual. The data imported includes those relative position estimates for the individuals that didn't senesce before we finished our field season. For more information on how those numbers were calculated, see Data_Cleaning.Rmd.
@@ -212,7 +215,7 @@ summary(soil.mod)
 ```
 
 ```{r model selection with dredge}
-dredge_result<-dredge(soil.mod) #using dredge funciton for model selection
+#dredge_result<-dredge(soil.mod) #using dredge funciton for model selection
 subset(dredge_result, delta<4)
 ```
 
@@ -236,11 +239,11 @@ plot(mert.nbinom) #plotting to see the fit
 The Mertensia seed data fits a negative binomial distribution. The glmmADMB package is the best for modeling data with a negative binomial fit.
 
 ```{r Mertensia glmmadmb with relative position}
-mert.glmmadmb<-glmmadmb(total.seeds ~ relative.position  + (1|site/plot.treat), family = "nbinom2", data = mert) #Mertensia model for negative binomial data with glmmadmb package
+mert.glmmadmb<-glmmadmb(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + treat + (1|site), family = "nbinom2", data = mert) #Mertensia model for negative binomial data with glmmadmb package
 summary(mert.glmmadmb) #summary of model output
 ```
 
-Treating plot treatment as a random effect or as a separate fixed effect didn't produce any significant results. The interaction between relative position and plot treatment also didn't produce significant results.
+The total number of developed seeds were unaffected by relative flowering time, number of conspecifics in bloom, or pollen limitation treatment. 
 
 Below is the plot of seed set vs. relative position of blooming in the community for Mertensia individuals. Plot treatment is indicated by individual color, and treatment received (open or pollen-supplemented) is indicated by individual shape.
 
@@ -274,11 +277,11 @@ plot(delph.nbinom) #plotting distribution fit
 The Delphinium data fits a negative binomial distribution. We will use the glmmADMB package again.
 
 ```{r Delphinium glmmADMB}
-delph.glmmadmb<-glmmadmb(total.seeds ~ relative.position + (1|site/plot.treat), family = "nbinom2", data = delph) #Delphinium model for negative binomial data with glmmadmb package
+delph.glmmadmb<-glmmadmb(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + treat + (1|site), family = "nbinom2", data = delph) #Delphinium model for negative binomial data with glmmadmb package
 summary(delph.glmmadmb) #summary of model output
 ```
 
-The plot treatment as a random effect and a separate fixed effect produced no significant results. The relative position was slightly significant.
+The relative blooming time, number of conspecifics in bloom, and pollen limitation treatment did not affect the total number of developed seeds.
 
 Below is the same plot for the Delphinium individuals.
 
@@ -308,11 +311,13 @@ plot(pot.nbinom) #plotting distribution fit
 ```
 
 ```{r Potentilla glmm}
-pot.glmmadmb<-glmmadmb(total.seeds ~ relative.position + (1|site/plot.treat), family = "nbinom2", data = pot) #Potentilla model for negative binomial data with glmmadmb package
+pot.glmmadmb<-glmmadmb(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + plot.treat + treat + (1|site), family = "nbinom2", data = pot) #Potentilla model for negative binomial data with glmmadmb package
 summary(pot.glmmadmb) #summary of model output
 ```
 
-Both plot treatment and relative position significantly affected seed set in Potentilla individuals. Below is the plot for Potentilla individuals.
+For Potentilla, as deviation from the popultion peak increases, developed seeds may increase (p=0.079). Additionally, the number of developed seeds was significantly greater in the manipulated plot (p=0.016), and as Potentilla individuals bloom later in the season compared to the population peak, the seed set may decrease (p=0.080). In terms of the density of conspecifics, as the number of conspecifics increased, the number of developed seeds increased (p=0.019). However, in the manipulated plot, as the number of conspecifics increased, the seed set decreased (p=0.049). (why???)
+
+Below is the plot for Potentilla individuals.
 
 ```{r Potentilla plot}
 ggplot(pot, aes(x=pot$relative.position, y=pot$total.seeds, group=plot.treat)) +
@@ -343,9 +348,11 @@ mert$undev.seeds<-(mert$total.seeds-mert$dev.seed) #creating an undeveloped seed
 ```
 
 ```{r Mertensia proportion model}
-Mert.glmer<-glmer(cbind(dev.seed,undev.seeds) ~ relative.position + (1|site/plot.treat), family = binomial, data = mert) #Mertensia model with proportion of developed seeds using lme4 package
+Mert.glmer<-glmer(cbind(dev.seed,undev.seeds) ~ deviation * early.late + plot.treat * number.conspecifics + treat + (1|site), family = binomial, data = mert) #Mertensia model with proportion of developed seeds using lme4 package
 summary(Mert.glmer)
 ```
+
+For Mertensia individuals, as deviation from the population peak increases, the proportion of developed seeds may decrease (p=0.0769). Additionally, as the number of conspecifics increases, the proportion of developed seeds may decrease (p=0.0572). In the manipulated plot, as conspecific density increases, seed set may decrease (p=0.0748).
 
 ```{r Mertensia plot}
 mert<-mert[!is.na(mert$prop.dev.seeds),] #removing NA values from proportion column
@@ -364,9 +371,11 @@ ggplot(mert, aes(x=mert$relative.position, y=mert$prop.dev.seeds, group=plot.tre
 delph$dev.seed.total<-delph$dev.seed+delph$dev.seed1 #creating developed seeds column
 delph$undev.seed.total<-delph$undev.seed+delph$undev.seed1 #creating undeveloped seeds column
 
-Delph.glmer<-glmer(cbind(dev.seed.total,undev.seed.total) ~ relative.position + (1|site/plot.treat), family = binomial, data = delph) #modeling Delphinium proportion of developed seeds with lme4 package
+Delph.glmer<-glmer(cbind(dev.seed.total,undev.seed.total) ~ deviation * early.late + plot.treat * number.conspecifics + treat + (1|site), family = binomial, data = delph) #modeling Delphinium proportion of developed seeds with lme4 package
 summary(Delph.glmer)
 ```
+
+For Delphinium individuals, late individuals had significantly lower seed set (p=0.0156). As individuals deviated from the population peak more and bloomed much later in the season, the proportion of developed seeds increased significantly (p=5.89e-09). (why??) Plot treatment had an effect on proportion of developed seeds, in that the manipulated plot had a significantly higher proportion of developed seeds (p=0.0227). In terms of the conspecific density, as conspecific density increased, the proportion of developed seeds increased (p=0.0291). However, in the manipulated plot, as the number of conspecifics increased, the proportion of developed seeds significantly decreased (p=1.48e-06). (why??) Additionally, the open-hand pollen limitation treatment had a slightly positive effect on the proportion (p=0.0593).
 
 ```{r Delphinium proportion plot}
 delph<-delph[!is.na(delph$prop.dev.seeds),] #removing NA values in proportion column
