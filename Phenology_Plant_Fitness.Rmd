@@ -44,6 +44,7 @@ suppressWarnings(suppressPackageStartupMessages(require(RColorBrewer)))
 suppressWarnings(suppressPackageStartupMessages(require(fitdistrplus)))
 suppressWarnings(suppressPackageStartupMessages(require(glmmADMB)))
 suppressWarnings(suppressPackageStartupMessages(require(MuMIn)))
+suppressWarnings(suppressPackageStartupMessages(require(lubridate)))
 ```
 
 # Data Import & Basic Formatting
@@ -99,11 +100,90 @@ Because many of the Potentilla individuals were still in bloom when we finished 
 
 ## Flower Count Data
 
+The community flower count data is essential to the number of conspecifics effect. Each of the species has to be analyzed separately.
+
 ```{r importing flower counts}
 flower.counts=read.csv("flower_counts.csv") #read in flower count data
+```
+
+### Mertensia
+
+We calculated the average number of Mertensia flowers in each site and plot in each week. This number was then merged with the Mertensia individuals to add the number of conspecifics variable.
+
+```{r mert flower count manipulation}
 mert.flower.counts<-flower.counts[(flower.counts$plant=="Mertensia fusiformis"),] #limit flower counts to Mertensia data
-aggregate(x=mert.flower.counts$total_flowers,by=list(mert.flower.counts$date,mert.flower.counts$site),FUN="mean") #calculate mean flower counts by week and site
-mert$conspecifics<-
+mert.counts.by.site<-aggregate(x=mert.flower.counts$total_flowers,by=list(mert.flower.counts$date,mert.flower.counts$site,mert.flower.counts$plot),FUN="mean") #calculate mean flower counts by week and site
+colnames(mert.counts.by.site)<-c("date","site","plot.treat","number.conspecifics")
+```
+
+```{r merging to get mert conspecifics, results="hide"}
+mert.counts.by.site$site<-as.character(mert.counts.by.site$site) #changing class to adjust names
+mert.counts.by.site$plot.treat<-as.character(mert.counts.by.site$plot.treat)
+
+mert.counts.by.site$site[mert.counts.by.site$site=="Avery Picnic"]<-"AveryPicnic" #fixing names
+mert.counts.by.site$site[mert.counts.by.site$site=="Stupid Falls"]<-"StupidFalls"
+mert.counts.by.site$site[mert.counts.by.site$site=="Wash 3C"]<-"WG3C"
+#mert.counts.by.site$plot.treat[!(mert.counts.by.site$plot.treat=="Kaysee")]
+mert.counts.by.site$plot.treat[mert.counts.by.site$plot.treat=="Control"]<-"control"
+mert.counts.by.site$plot.treat[mert.counts.by.site$plot.treat=="Manipulated"]<-"manip"
+
+mert$week.estimate<-strftime(mert$midpoint, format = "%V") #calculating week numbers in preparation for the merge
+mert.counts.by.site$week.estimate<-strftime(mert.counts.by.site$date, format = "%V")
+
+mert<-merge(mert,mert.counts.by.site, by.x = c("site","plot.treat","week.estimate"), by.y = c("site","plot.treat","week.estimate")) #merging by site, plot treatment, and week estimate
+```
+
+### Delphinium
+
+The same was repeated for Delphinium and Potentilla.
+
+```{r delph flower count manipulation}
+delph.flower.counts<-flower.counts[(flower.counts$plant=="Delphinium nuttallianum"),] #limit flower counts to Delphinium data
+delph.counts.by.site<-aggregate(x=delph.flower.counts$total_flowers,by=list(delph.flower.counts$date,delph.flower.counts$site,delph.flower.counts$plot),FUN="mean") #calculate mean flower counts by week and site
+colnames(delph.counts.by.site)<-c("date","site","plot.treat","number.conspecifics")
+```
+
+```{r merging to get delph conspecifics, results="hide"}
+delph.counts.by.site$site<-as.character(delph.counts.by.site$site) #changing class to adjust names
+delph.counts.by.site$plot.treat<-as.character(delph.counts.by.site$plot.treat)
+
+delph.counts.by.site$site[delph.counts.by.site$site=="Rustlers Gulch"]<-"RustlersGulch" #fixing names
+delph.counts.by.site$site[delph.counts.by.site$site=="Wash 3C"]<-"WG3C"
+#delph.counts.by.site$plot.treat[!(delph.counts.by.site$plot.treat=="Kaysee")]
+delph.counts.by.site$plot.treat[delph.counts.by.site$plot.treat=="Control"]<-"control"
+delph.counts.by.site$plot.treat[delph.counts.by.site$plot.treat=="Manipulated"]<-"manip"
+
+delph$week.estimate<-strftime(delph$midpoint, format = "%V") #calculating week numbers in preparation for the merge
+delph.counts.by.site$week.estimate<-strftime(delph.counts.by.site$date, format = "%V")
+
+delph<-merge(delph,delph.counts.by.site, by.x = c("site","plot.treat","week.estimate"), by.y = c("site","plot.treat","week.estimate")) #merging by site, plot treatment, and week estimate
+```
+
+### Potentilla
+
+```{r pot flower count manipulation}
+pot.flower.counts<-flower.counts[(flower.counts$plant=="Potentilla pulcherrima"),] #limit flower counts to Potentilla data
+pot.counts.by.site<-aggregate(x=pot.flower.counts$total_flowers,by=list(pot.flower.counts$date,pot.flower.counts$site,pot.flower.counts$plot),FUN="mean") #calculate mean flower counts by week and site
+colnames(pot.counts.by.site)<-c("date","site","plot.treat","number.conspecifics")
+```
+
+```{r merging to get pot conspecifics, results="hide"}
+pot.counts.by.site$site<-as.character(pot.counts.by.site$site) #changing class to adjust names
+pot.counts.by.site$plot.treat<-as.character(pot.counts.by.site$plot.treat)
+
+pot.counts.by.site$site[pot.counts.by.site$site=="Rustlers Gulch"]<-"RustlersGulch" #fixing names
+pot.counts.by.site$site[pot.counts.by.site$site=="Wash 3C"]<-"WG3C"
+pot.counts.by.site$site[pot.counts.by.site$site=="Bellview Bench"]<-"BellviewBench"
+pot.counts.by.site$site[pot.counts.by.site$site=="Avery Picnic"]<-"AveryPicnic"
+pot.counts.by.site$site[pot.counts.by.site$site=="Stupid Falls"]<-"StupidFalls"
+#pot.counts.by.site$plot.treat[!(pot.counts.by.site$plot.treat=="Kaysee")]
+pot.counts.by.site$plot.treat[pot.counts.by.site$plot.treat=="Control"]<-"control"
+pot.counts.by.site$plot.treat[pot.counts.by.site$plot.treat=="Manipulated"]<-"manip"
+
+pot$week.estimate<-strftime(pot$midpoint, format = "%V") #calculating week numbers in preparation for the merge
+pot.counts.by.site$week.estimate<-strftime(pot.counts.by.site$date, format = "%V")
+
+pot<-merge(pot,pot.counts.by.site, by.x = c("site","plot.treat","week.estimate"), by.y = c("site","plot.treat","week.estimate")) #merging by site, plot treatment, and week estimate
 ```
 
 # Mixed Effects Models: Effect of Soil Moisture Variables on Total Seeds
