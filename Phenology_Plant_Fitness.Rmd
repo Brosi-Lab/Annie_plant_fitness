@@ -126,7 +126,7 @@ mert.counts.by.site$plot.treat<-as.character(mert.counts.by.site$plot.treat)
 mert.counts.by.site$site[mert.counts.by.site$site=="Avery Picnic"]<-"AveryPicnic" #fixing names
 mert.counts.by.site$site[mert.counts.by.site$site=="Stupid Falls"]<-"StupidFalls"
 mert.counts.by.site$site[mert.counts.by.site$site=="Wash 3C"]<-"WG3C"
-#mert.counts.by.site$plot.treat[!(mert.counts.by.site$plot.treat=="Kaysee")]
+mert.counts.by.site$plot.treat[!(mert.counts.by.site$plot.treat=="Kaysee")]
 mert.counts.by.site$plot.treat[mert.counts.by.site$plot.treat=="Control"]<-"control"
 mert.counts.by.site$plot.treat[mert.counts.by.site$plot.treat=="Manipulated"]<-"manip"
 
