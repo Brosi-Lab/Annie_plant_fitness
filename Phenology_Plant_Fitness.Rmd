@@ -216,7 +216,7 @@ summary(soil.mod)
 
 ```{r model selection with dredge}
 #dredge_result<-dredge(soil.mod) #using dredge funciton for model selection
-subset(dredge_result, delta<4)
+#subset(dredge_result, delta<4)
 ```
 
 The null model was the best for these data. None of the combinations of soil moisture variables were selected for predicting the data. As a result, we won't include soil moisture as a fixed effect in our final model.
