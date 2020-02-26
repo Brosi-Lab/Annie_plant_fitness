@@ -248,7 +248,7 @@ The total number of developed seeds were unaffected by relative flowering time, 
 Below is the plot of seed set vs. relative position of blooming in the community for Mertensia individuals. Plot treatment is indicated by individual color, and treatment received (open or pollen-supplemented) is indicated by individual shape.
 
 ```{r Mertensia plot}
-ggplot(mert, aes(x=mert$relative.position, y=mert$total.seeds)) +
+ggplot(mert, aes(x=mert$relative.position, y=mert$total.seeds, group=mert$plot.treat)) +
   labs(y="Total Developed Seeds",x="Days Relative to Population Peak Bloom", title="Effect of Mertensia Blooming Time on Total Developed Seeds") +
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
   scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
@@ -365,6 +365,15 @@ ggplot(pot, aes(x=pot$deviation, y=pot$total.seeds, group= pot$early.late)) +
   scale_color_brewer(palette="Dark2") + labs(color="Early or Late") +
   scale_color_manual(labels= c("early","late"), values = c("early"="darkgreen","late"="darkorange")) +
   geom_smooth(method="glm",aes(color=early.late),yintercept=mean(pot$total.seeds[pot$deviation==0]))
+```
+
+```{r Potentilla plot with conspecific density}
+ggplot(pot, aes(x=pot$number.conspecifics, y=pot$total.seeds, group= pot$plot.treat)) +
+  labs(y="Total Developed Seeds",x="Conspecific Density", title="Effect of Potentilla Conspecific Density on Total Developed Seeds") +
+  geom_point(size=3, alpha = 0.8) +
+  scale_color_brewer(palette="Dark2") + labs(color="control or manip") +
+  scale_color_manual(labels= c("control","manip"), values = c("control"="darkgreen","manip"="darkorange")) +
+  geom_smooth(method="glm", aes(color=plot.treat))
 ```
 
 # Mixed Effects Model with Proportion Data
