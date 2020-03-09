@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r Delphinium mixed effects model}
 #install.packages("lme4")
 library(lme4) #loading package for mixed effects model 
-delph = read.csv("~/Documents/BROSI/THESIS/Data Cleaning/Delphinium_final2.csv") #loading Delphinium data
+delph = read.csv("Delphinium_final2.csv") #loading Delphinium data
 Delph.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), family = poisson,  data = delph, na.action = na.omit) # model
 summary(Delph.glmer) #model output
 ```
@@ -22,7 +22,7 @@ summary(Delph.glmer) #model output
 ##Mertensia
 
 ```{r Mertensia mixed effects model}
-mert = read.csv("~/Documents/BROSI/THESIS/Data Cleaning/Mertensia_final2.csv") #loading Mertensia data
+mert = read.csv("Mertensia_final2.csv") #loading Mertensia data
 Mert.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), family = poisson, data = mert, na.action = na.omit)
 summary(Mert.glmer)
 ```
@@ -30,7 +30,7 @@ summary(Mert.glmer)
 ##Potentilla
 
 ```{r Potentilla mixed effects model}
-pot = read.csv("~/Documents/BROSI/THESIS/Data Cleaning/Potentilla_final2.csv") # loading Potentilla data
+pot = read.csv("Potentilla_final2.csv") # loading Potentilla data
 Pot.glmer = glmer(total.seeds ~ relative.position + plot.treat + (1|site), family = poisson, data = pot, na.action = na.omit)
 summary(Pot.glmer)
 ```
