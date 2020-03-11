@@ -57,14 +57,15 @@ The first dataset contains the individual data for Mertensia fusiformis, which w
 
 ```{r Mertensia data import}
 mert = read.csv("Mertensia_final2.csv") # read in Mertensia data
-mert<-mert[!is.na(mert$total.seeds),] #removing NA values from Mertenia total seed column
+mert$seeds.per.flower<-(mert$dev.seed/mert$flowers)
+mert<-mert[!is.na(mert$seeds.per.flower),] #removing NA values from Mertenia seeds per flower column
 mert<-mert[!is.na(mert$relative.position),] #removing NA values from relative position column
 mert$prop.dev.seeds<-(mert$dev.seed/mert$total.seeds) #adding proportion of developed seeds
 mert$deviation<-abs(mert$relative.position) #getting deviation from the peak
 mert$early.late<-factor(NA, levels = c("early","late")) #creating early/late variables based on relative position
 mert$early.late[mert$relative.position<0]<-"early"
 mert$early.late[mert$relative.position>0]<-"late"
-mert<-mert[!is.na(mert$early.late),] #is this right???
+mert<-mert[!is.na(mert$early.late),]
 ```
 
 ## Delphinium Data
@@ -73,6 +74,8 @@ The second dataset contains individual data for Delphinium nuttalianum. Delphini
 
 ```{r Delphinium data import}
 delph = read.csv("Delphinium_final2.csv") # read in Delphinium data
+delph$seeds.per.flower<-(delph$total.seeds/delph$X.flowers)
+delph<-delph[!is.na(delph$seeds.per.flower),] #removing NA values from Mertenia seeds per flower column
 delph<-delph[!is.na(delph$total.seeds),] #removing NA values in seed column
 delph<-delph[!is.na(delph$relative.position),] #removing NA values in the relative position
 delph$prop.dev.seeds<-(delph$total.seeds/(delph$undev.seed1+delph$undev.seed+delph$total.seeds)) #adding proportion of developed seeds
@@ -80,7 +83,7 @@ delph$deviation<-abs(delph$relative.position) #getting deviation from the peak
 delph$early.late<-factor(NA, levels = c("early","late")) #creating early/late variables based on relative position
 delph$early.late[delph$relative.position<0]<-"early"
 delph$early.late[delph$relative.position>0]<-"late"
-delph<-delph[!is.na(delph$early.late),] #still not sure this is right
+delph<-delph[!is.na(delph$early.late),]
 ```
 
 ## Potentilla Data
@@ -90,13 +93,15 @@ The third dataset contains Potentilla pulcherrima data. Potentilla was set up in
 ```{r Potentilla data import}
 pot = read.csv("Potentilla_final2.csv") # read in Potentilla data
 pot<-pot[c(-119,-223),] #removing one row with NA in treatment column
+pot$seeds.per.flower<-(pot$total.seeds/pot$number.flowers)
+pot<-pot[!is.na(pot$seeds.per.flower),] #removing NA values from Mertenia seeds per flower column
 pot<-pot[!is.na(pot$relative.position),] #removing NA values in relative position
 pot<-pot[!is.na(pot$total.seeds),] #removing NA values in total seeds column
 pot$deviation<-abs(pot$relative.position) #getting deviation from the peak
 pot$early.late<-factor(NA, levels = c("early","late")) #creating early/late variables based on relative position
 pot$early.late[pot$relative.position<0]<-"early"
 pot$early.late[pot$relative.position>0]<-"late"
-pot<-pot[!is.na(pot$early.late),] #still not sure
+pot<-pot[!is.na(pot$early.late),]
 ```
 
 Because many of the Potentilla individuals were still in bloom when we finished our field season, we had to calculate a midpoint and relative position based on those individuals that had senesced. A key factor that determines duration of blooming is the number of flowers on the individual. The data imported includes those relative position estimates for the individuals that didn't senesce before we finished our field season. For more information on how those numbers were calculated, see Data_Cleaning.Rmd.
@@ -232,14 +237,14 @@ The response variable is total seeds, which is discrete and non-zero. The intera
 We started by checking the distribution of the total seed counts.
 
 ```{r checking Mertensia distribution}
-mert.nbinom<-fitdist(mert$total.seeds, "nbinom") #fitting Mertensia data to negative binomial distribution using fitdistplus
+mert.nbinom<-fitdist(mert$dev.seed, "nbinom") #fitting Mertensia data to negative binomial distribution using fitdistplus
 plot(mert.nbinom) #plotting to see the fit
 ```
 
 The Mertensia seed data fits a negative binomial distribution. The glmmADMB package is the best for modeling data with a negative binomial fit.
 
 ```{r Mertensia glmmadmb with relative position}
-mert.glmmadmb<-glmmadmb(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + treat + (1|site), family = "nbinom2", data = mert) #Mertensia model for negative binomial data with glmmadmb package
+mert.glmmadmb<-glmmadmb(dev.seed ~ deviation * early.late + plot.treat * number.conspecifics + treat + (1|site), family = "nbinom2", data = mert) #Mertensia model for negative binomial data with glmmadmb package
 summary(mert.glmmadmb) #summary of model output
 ```
 
@@ -248,11 +253,11 @@ The total number of developed seeds were unaffected by relative flowering time, 
 Below is the plot of seed set vs. relative position of blooming in the community for Mertensia individuals. Plot treatment is indicated by individual color, and treatment received (open or pollen-supplemented) is indicated by individual shape.
 
 ```{r Mertensia plot}
-ggplot(mert, aes(x=mert$relative.position, y=mert$total.seeds, group=mert$plot.treat)) +
+ggplot(mert, aes(x=mert$relative.position, y=mert$dev.seed, group=mert$plot.treat)) +
   labs(y="Total Developed Seeds",x="Days Relative to Population Peak Bloom", title="Effect of Mertensia Blooming Time on Total Developed Seeds") +
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
   scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
-  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkgreen","manip"="darkorange")) +
+  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkred","manip"="darkorange")) +
   geom_smooth()
 ```
 
@@ -262,23 +267,28 @@ While the line of best fit is somewhat unimodal, there is not a strong relations
 Now we'll try with the interaction between deviation and early/late instead of relative position in order to fit a linear model.
 
 ```{r Mertensia plot substituting relative position}
-ggplot(mert, aes(x=mert$deviation, y=mert$total.seeds, group= mert$early.late)) +
+ggplot(mert, aes(x=mert$deviation, y=mert$dev.seed, group= mert$early.late)) +
   labs(y="Total Developed Seeds",x="Days Relative to Population Peak Bloom", title="Effect of Mertensia Deviation from Peak on Total Developed Seeds") + theme_classic() +
+  theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
-  labs(color="Early or Late")
+  scale_color_brewer(palette="Dark2") + 
+  labs(color="Before or After Peak") +
+  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange"))
 ```
 
 
 Now we will look at conspecific density and its effects on total developed seeds.
 
 ```{r Mertensia plot with conspecific density}
-ggplot(mert, aes(x=mert$number.conspecifics, y=mert$total.seeds, group= mert$plot.treat)) +
+ggplot(mert, aes(x=mert$number.conspecifics, y=mert$dev.seed, group= mert$plot.treat)) +
   labs(y="Total Developed Seeds",x="Conspecific Density", title="Effect of Mertensia Conspecific Density on Total Developed Seeds") +
+  theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
+  geom_smooth(method="glm",aes(color=plot.treat)) +
+  scale_color_brewer(palette="Dark2") + 
   labs(color="Plot Treatment") +
-  geom_smooth(method="glm", aes(color=plot.treat)) +
-  theme_classic()
+  scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
 ```
 
 High conspecific density may have a negative effect on total number of developed seeds, but the relationship is fairly weak. There is no difference between control and manip.
@@ -306,7 +316,7 @@ ggplot(delph, aes(x=delph$relative.position, y=delph$total.seeds, group=plot.tre
   labs(title="Effect of Delphinium Blooming Time on Total Developed Seeds", y="Total Developed Seeds",x="Days Relative to Population Peak Bloom") +
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
   scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
-  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkgreen","manip"="darkorange")) +
+  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkred","manip"="darkorange")) +
   geom_smooth()
 ```
 
@@ -318,7 +328,9 @@ ggplot(delph, aes(x=delph$deviation, y=delph$total.seeds, group= delph$early.lat
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
-  labs(color="Early or Late")
+  scale_color_brewer(palette="Dark2") + 
+  labs(color="Before or After Peak") +
+  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange"))
 ```
 
 
@@ -326,10 +338,12 @@ ggplot(delph, aes(x=delph$deviation, y=delph$total.seeds, group= delph$early.lat
 ```{r Delphinium plot with conspecific density}
 ggplot(delph, aes(x=delph$number.conspecifics, y=delph$total.seeds, group= delph$plot.treat)) +
   labs(y="Total Developed Seeds",x="Conspecific Density", title="Effect of Delphinium Conspecific Density on Total Developed Seeds") +
+  theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
+  geom_smooth(method="glm",aes(color=plot.treat)) +
+  scale_color_brewer(palette="Dark2") + 
   labs(color="Plot Treatment") +
-  geom_smooth(method="glm", aes(color=plot.treat)) +
-  theme_classic()
+  scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
 ```
 
 ## Potentilla
@@ -353,7 +367,7 @@ ggplot(pot, aes(x=pot$relative.position, y=pot$total.seeds, group=plot.treat)) +
   labs(title="Effect of Potentilla Blooming Time on Total Developed Seeds", y="Total Developed Seeds",x="Days Relative to Population Peak Bloom") +
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
   scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
-  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkgreen","manip"="darkorange")) +
+  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkred","manip"="darkorange")) +
   geom_smooth()
 ```
 
@@ -363,16 +377,135 @@ ggplot(pot, aes(x=pot$deviation, y=pot$total.seeds, group= pot$early.late)) +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
-  labs(color="Early or Late")
+  scale_color_brewer(palette="Dark2") + 
+  labs(color="Before or After Peak") +
+  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange"))
 ```
 
 ```{r Potentilla plot with conspecific density}
 ggplot(pot, aes(x=pot$number.conspecifics, y=pot$total.seeds, group= pot$plot.treat)) +
   labs(y="Total Developed Seeds",x="Conspecific Density", title="Effect of Potentilla Conspecific Density on Total Developed Seeds") +
+  theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
+  geom_smooth(method="glm",aes(color=plot.treat)) +
+  scale_color_brewer(palette="Dark2") + 
   labs(color="Plot Treatment") +
-  geom_smooth(method="glm", aes(color=plot.treat)) +
-  theme_classic()
+  scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
+```
+
+# Mixed Effects Models with Seeds per Flower Data
+
+## Mertensia
+
+```{r Mertensia seeds per flower model}
+Mert.seeds.flower.glmer<-glmer(cbind(dev.seed,flowers) ~ deviation * early.late + plot.treat * number.conspecifics + treat + (1|site/flowers), family = binomial, data = mert) #Mertensia model with seeds per flower using lme4 package
+summary(Mert.seeds.flower.glmer)
+```
+
+```{r Mertensia seeds per flower relative position plot}
+ggplot(mert, aes(x=mert$relative.position, y=mert$seeds.per.flower, group=mert$plot.treat)) +
+  labs(y="Seeds per Flower",x="Days Relative to Population Peak Bloom", title="Effect of Mertensia Blooming Time on Seeds per Flower") +
+  geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
+  scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
+  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkred","manip"="darkorange")) +
+  geom_smooth()
+```
+
+```{r Mertensia deviation plot seeds per flower}
+ggplot(mert, aes(x=mert$deviation, y=mert$seeds.per.flower, group= mert$early.late)) +
+  labs(y="Seeds per Flower",x="Days Relative to Population Peak Bloom", title="Effect of Mertensia Deviation from Peak on Seeds per Flower") + 
+  theme_classic() +
+  geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
+  geom_smooth(method="glm",aes(color=early.late)) +
+  scale_color_brewer(palette="Dark2") + 
+  labs(color="Before or After Peak") +
+  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange"))
+```
+
+
+```{r Mertensia seeds per flower plot with conspecific density}
+ggplot(mert, aes(x=mert$number.conspecifics, y=mert$seeds.per.flower, group= mert$plot.treat)) +
+  labs(y="Seeds per Flower",x="Conspecific Density", title="Effect of Mertensia Conspecific Density on Seeds per Flower") +
+  theme_classic() +
+  geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
+  geom_smooth(method="glm",aes(color=plot.treat)) +
+  scale_color_brewer(palette="Dark2") + 
+  labs(color="Plot Treatment") +
+  scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
+```
+
+## Delphinium
+
+```{r Delphinium seeds per flower model}
+Delph.seeds.flower.glmer<-glmer(cbind(total.seeds,X.flowers) ~ deviation * early.late + plot.treat * number.conspecifics + treat + (1|site/X.flowers), family = binomial, data = delph) #Delphinium model with seeds per flower using lme4 package
+summary(Delph.seeds.flower.glmer)
+```
+
+```{r Delphinium seeds per flower relative position plot}
+ggplot(delph, aes(x=delph$relative.position, y=delph$seeds.per.flower, group=delph$plot.treat)) +
+  labs(y="Seeds per Flower",x="Days Relative to Population Peak Bloom", title="Effect of Delphinium Blooming Time on Seeds per Flower") +
+  geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
+  scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
+  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkred","manip"="darkorange")) +
+  geom_smooth()
+```
+
+```{r Delphinium deviation plot seeds per flower}
+ggplot(delph, aes(x=delph$deviation, y=delph$seeds.per.flower, group= delph$early.late)) +
+  labs(y="Seeds per Flower",x="Days Relative to Population Peak Bloom", title="Effect of Delphinium Deviation from Peak on Seeds per Flower") + theme_classic() +
+  geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
+  geom_smooth(method="glm",aes(color=early.late)) +
+  scale_color_brewer(palette="Dark2") + 
+  labs(color="Before or After Peak") +
+  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange"))
+```
+
+```{r Delphinium seeds per flower plot with conspecific density}
+ggplot(delph, aes(x=delph$number.conspecifics, y=delph$seeds.per.flower, group= delph$plot.treat)) +
+  labs(y="Seeds per Flower",x="Conspecific Density", title="Effect of Delphinium Conspecific Density on Seeds per Flower") +
+  theme_classic() +
+  geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
+  geom_smooth(method="glm",aes(color=plot.treat)) +
+  scale_color_brewer(palette="Dark2") + 
+  labs(color="Plot Treatment") +
+  scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
+```
+
+## Potentilla
+
+```{r Potentilla seeds per flower model}
+Pot.seeds.flower.glmer<-glmer(cbind(total.seeds,number.flowers) ~ deviation * early.late + plot.treat * number.conspecifics + treat + (1|site/number.flowers), family = binomial, data = pot) #Potentilla model with seeds per flower using lme4 package
+summary(Pot.seeds.flower.glmer)
+```
+
+```{r Potentilla seeds per flower relative position plot}
+ggplot(pot, aes(x=pot$relative.position, y=pot$seeds.per.flower, group=pot$plot.treat)) +
+  labs(y="Seeds per Flower",x="Days Relative to Population Peak Bloom", title="Effect of Potentilla Blooming Time on Seeds per Flower") +
+  geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
+  scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
+  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkred","manip"="darkorange")) +
+  geom_smooth()
+```
+
+```{r Potentilla deviation plot seeds per flower}
+ggplot(pot, aes(x=pot$deviation, y=pot$seeds.per.flower, group= pot$early.late)) +
+  labs(y="Seeds per Flower",x="Days Relative to Population Peak Bloom", title="Effect of Potentilla Deviation from Peak on Seeds per Flower") + theme_classic() +
+  geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
+  geom_smooth(method="glm",aes(color=early.late)) +
+  scale_color_brewer(palette="Dark2") + 
+  labs(color="Before or After Peak") +
+  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange"))
+```
+
+```{r Potentilla seeds per flower plot with conspecific density}
+ggplot(pot, aes(x=pot$number.conspecifics, y=pot$seeds.per.flower, group= pot$plot.treat)) +
+  labs(y="Seeds per Flower",x="Conspecific Density", title="Effect of Potentilla Conspecific Density on Seeds per Flower") +
+  theme_classic() +
+  geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
+  geom_smooth(method="glm",aes(color=plot.treat)) +
+  scale_color_brewer(palette="Dark2") + 
+  labs(color="Plot Treatment") +
+  scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
 ```
 
 # Mixed Effects Model with Proportion Data
@@ -399,7 +532,7 @@ ggplot(mert, aes(x=mert$relative.position, y=mert$prop.dev.seeds, group=plot.tre
   labs(y="Proportion of Developed Seeds",x="Days Relative to Population Peak Bloom",title="Effect of Mertensia Blooming Time on Proportion of Developed Seeds") +
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
   scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
-  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkgreen","manip"="darkorange")) +
+  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkred","manip"="darkorange")) +
   geom_smooth()
 ```
 
@@ -409,16 +542,20 @@ ggplot(mert, aes(x=mert$deviation, y=mert$prop.dev.seeds, group= mert$early.late
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
-  labs(color="Early or Late")
+  scale_color_brewer(palette="Dark2") + 
+  labs(color="Before or After Peak") +
+  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange"))
 ```
 
 ```{r mertensia plot conspecifics and proportions}
 ggplot(mert, aes(x=mert$number.conspecifics, y=mert$prop.dev.seeds, group= mert$plot.treat)) +
   labs(y="Proportion of Developed Seeds",x="Conspecific Density",title="Effect of Mertensia Conspecific Density on Proportion of Developed Seeds") +
+  theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
+  geom_smooth(method="glm",aes(color=plot.treat)) +
+  scale_color_brewer(palette="Dark2") + 
   labs(color="Plot Treatment") +
-  geom_smooth(method="glm", aes(color=plot.treat)) +
-  theme_classic()
+  scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
 ```
 
 ## Delphinium
@@ -439,7 +576,7 @@ ggplot(delph, aes(x=delph$relative.position, y=delph$prop.dev.seeds, group=plot.
   labs(title="Effect of Delphinium Blooming Time on Proportion of Developed Seeds", y="Proportion of Developed Seeds",x="Days Relative to Population Peak Bloom") +
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
   scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
-  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkgreen","manip"="darkorange")) + 
+  scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkred","manip"="darkorange")) +
   geom_smooth()
 ```
 
@@ -449,16 +586,20 @@ ggplot(delph, aes(x=delph$deviation, y=delph$prop.dev.seeds, group= delph$early.
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
-  labs(color="Early or Late")
+  scale_color_brewer(palette="Dark2") + 
+  labs(color="Before or After Peak") +
+  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange"))
 ```
 
 ```{r Delphinium plot conspecifics and proportions}
 ggplot(delph, aes(x=delph$number.conspecifics, y=delph$prop.dev.seeds, group= delph$plot.treat)) +
   labs(y="Proportion of Developed Seeds",x="Conspecific Density",title="Effect of Delphinium Conspecific Density on Proportion of Developed Seeds") +
+  theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
+  geom_smooth(method="glm",aes(color=plot.treat)) +
+  scale_color_brewer(palette="Dark2") + 
   labs(color="Plot Treatment") +
-  geom_smooth(method="glm", aes(color=plot.treat)) +
-  theme_classic() + xlim(0,110)
+  scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue")) + xlim(0,110)
 ```
 
 # Session Info
