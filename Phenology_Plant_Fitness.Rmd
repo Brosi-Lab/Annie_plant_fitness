@@ -231,6 +231,10 @@ The response variable is total seeds, which is discrete and non-zero. The intera
 
 We started by checking the distribution of the total seed counts.
 
+```{r limiting Mertensia to open}
+mert<-mert[(mert$treat=="open"),] #removed hand pollination treatment
+```
+
 ```{r checking Mertensia distribution}
 mert.nbinom<-fitdist(mert$dev.seed, "nbinom") #fitting Mertensia data to negative binomial distribution using fitdistplus
 plot(mert.nbinom) #plotting to see the fit
@@ -239,7 +243,8 @@ plot(mert.nbinom) #plotting to see the fit
 The Mertensia seed data fits a negative binomial distribution. The glmmADMB package is the best for modeling data with a negative binomial fit.
 
 ```{r Mertensia glmmadmb with relative position}
-mert.glmmadmb<-glmmadmb(dev.seed ~ deviation * early.late + plot.treat * number.conspecifics + treat + (1|site), family = "nbinom2", data = mert) #Mertensia model for negative binomial data with glmmadmb package
+mert.glmmadmb<-glmmadmb(dev.seed ~ deviation * early.late + plot.treat * number.conspecifics + (1|site), family = "nbinom2", data = mert) #Mertensia model for negative binomial data with glmmadmb package
+#removed treat fixed effect (only open in data set)
 summary(mert.glmmadmb) #summary of model output
 ```
 
@@ -290,6 +295,10 @@ High conspecific density may have a negative effect on total number of developed
 
 ## Delphinium
 
+```{r limiting Delphinium to open}
+delph<-delph[(delph$treat=="open"),] #removed hand pollination treatment
+```
+
 ```{r checking Delphinium distribution}
 delph.nbinom<-fitdist(delph$total.seeds, "nbinom") #fitting negative binomial distribution using fitdistplus package
 plot(delph.nbinom) #plotting distribution fit
@@ -298,7 +307,8 @@ plot(delph.nbinom) #plotting distribution fit
 The Delphinium data fits a negative binomial distribution. We will use the glmmADMB package again.
 
 ```{r Delphinium glmmADMB}
-delph.glmmadmb<-glmmadmb(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + treat + (1|site), family = "nbinom2", data = delph) #Delphinium model for negative binomial data with glmmadmb package
+delph.glmmadmb<-glmmadmb(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + (1|site), family = "nbinom2", data = delph) #Delphinium model for negative binomial data with glmmadmb package
+#removed treat fixed effect (only open)
 summary(delph.glmmadmb) #summary of model output
 ```
 
@@ -343,13 +353,18 @@ ggplot(delph, aes(x=delph$number.conspecifics, y=delph$total.seeds, group= delph
 
 ## Potentilla
 
+```{r limiting Potentilla to open}
+pot<-pot[(pot$treat=="open"),] #removed hand pollination treatment
+```
+
 ```{r checking Potentilla distribution}
 pot.nbinom<-fitdist(pot$total.seeds, "nbinom") #fitting negative binomial distribution using fitdistplus package
 plot(pot.nbinom) #plotting distribution fit
 ```
 
 ```{r Potentilla glmm}
-pot.glmmadmb<-glmmadmb(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + plot.treat + treat + (1|site), family = "nbinom2", data = pot) #Potentilla model for negative binomial data with glmmadmb package
+pot.glmmadmb<-glmmadmb(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + plot.treat + (1|site), family = "nbinom2", data = pot) #Potentilla model for negative binomial data with glmmadmb package
+#removed treat fixed effect (only open)
 summary(pot.glmmadmb) #summary of model output
 ```
 
@@ -400,7 +415,8 @@ mert$undev.seeds<-(mert$total.seeds-mert$dev.seed) #creating an undeveloped seed
 ```
 
 ```{r Mertensia proportion model}
-Mert.glmer<-glmer(cbind(dev.seed,undev.seeds) ~ deviation * early.late + plot.treat * number.conspecifics + treat + (1|site), family = binomial, data = mert) #Mertensia model with proportion of developed seeds using lme4 package
+Mert.glmer<-glmer(cbind(dev.seed,undev.seeds) ~ deviation * early.late + plot.treat * number.conspecifics + (1|site), family = binomial, data = mert) #Mertensia model with proportion of developed seeds using lme4 package
+#removed treat fixed effect (only open in data set)
 summary(Mert.glmer)
 ```
 
@@ -445,7 +461,8 @@ ggplot(mert, aes(x=mert$number.conspecifics, y=mert$prop.dev.seeds, group= mert$
 delph$dev.seed.total<-delph$dev.seed+delph$dev.seed1 #creating developed seeds column
 delph$undev.seed.total<-delph$undev.seed+delph$undev.seed1 #creating undeveloped seeds column
 
-Delph.glmer<-glmer(cbind(dev.seed.total,undev.seed.total) ~ deviation * early.late + plot.treat * number.conspecifics + treat + (1|site), family = binomial, data = delph) #modeling Delphinium proportion of developed seeds with lme4 package
+Delph.glmer<-glmer(cbind(dev.seed.total,undev.seed.total) ~ deviation * early.late + plot.treat * number.conspecifics + (1|site), family = binomial, data = delph) #modeling Delphinium proportion of developed seeds with lme4 package
+#removed treat fixed effect (only open)
 summary(Delph.glmer)
 ```
 
