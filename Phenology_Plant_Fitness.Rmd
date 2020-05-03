@@ -252,7 +252,7 @@ We did not detect an effect of relative blooming time, conspecific density, or p
 
 Below is the plot of seed set vs. relative position of blooming in the population for Mertensia individuals. Plot treatment is indicated by individual color.
 
-```{r Mertensia plot, message=FALSE}
+```{r Mertensia plot, message=FALSE,warning=FALSE}
 ggplot(mert.open, aes(x=mert.open$relative.position, y=mert.open$dev.seed, group=mert.open$plot.treat)) +
   labs(y="Total Developed Seeds",x="Days Relative to Population Peak Bloom", title="Effect of Mertensia Blooming Time on Total Developed Seeds") +
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
@@ -321,7 +321,7 @@ We did not detect an effect of relative blooming time, plot treatment, or conspe
 
 Below are the plots for the Delphinium individuals.
 
-```{r Delphinium plot,message=FALSE}
+```{r Delphinium plot,message=FALSE,warning=FALSE}
 ggplot(delph.open, aes(x=delph.open$relative.position, y=delph.open$total.seeds, group=plot.treat)) +
   labs(title="Effect of Delphinium Blooming Time on Total Developed Seeds", y="Total Developed Seeds",x="Days Relative to Population Peak Bloom") +
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
@@ -386,7 +386,7 @@ We did not detect an effect of relative blooming time, plot treatment, or conspe
 
 Below is the plot for Potentilla individuals.
 
-```{r Potentilla plot,message=FALSE}
+```{r Potentilla plot,message=FALSE,warning=FALSE}
 ggplot(pot.open, aes(x=pot.open$relative.position, y=pot.open$total.seeds, group=plot.treat)) +
   labs(title="Effect of Potentilla Blooming Time on Total Developed Seeds", y="Total Developed Seeds",x="Days Relative to Population Peak Bloom") +
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
@@ -450,7 +450,7 @@ A marginally significant effect was detected in the interaction between deviatio
 
 Below are the plots for Mertensia proportion data.
 
-```{r Mertensia proportion plot,message=FALSE}
+```{r Mertensia proportion plot,message=FALSE,warning=FALSE}
 mert.open<-mert.open[!is.na(mert.open$prop.dev.seeds),] #removing NA values from proportion column
 
 ggplot(mert.open, aes(x=mert.open$relative.position, y=mert.open$prop.dev.seeds, group=plot.treat)) +
@@ -512,7 +512,7 @@ Relative blooming time, plot treatment, and conspecific density all had strongly
 
 Below are the plots for the proportion of developed seeds in Delphinium individuals.
 
-```{r Delphinium proportion plot,message=FALSE}
+```{r Delphinium proportion plot,message=FALSE,warning=FALSE}
 delph.open<-delph.open[!is.na(delph.open$prop.dev.seeds),] #removing NA values in proportion column
 ggplot(delph.open, aes(x=delph.open$relative.position, y=delph.open$prop.dev.seeds, group=plot.treat)) +
   labs(title="Effect of Delphinium Blooming Time on Proportion of Developed Seeds", y="Proportion of Developed Seeds",x="Days Relative to Population Peak Bloom") +
