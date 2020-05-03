@@ -18,21 +18,21 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Overview
 
-This project aims to connect floral phenology to reproductive success on the individual level and landscape level for three subalpine plants. Data were collected at the Rocky Mountain Biological Laboratory during the 2019 field season. Focal species include Mertensia fusiformis, Potentilla pulcherrima, and Delphinium nuttalianum. 
+This project aims to connect floral phenology to reproductive success on the individual level and landscape level for three subalpine plants. Data were collected at the Rocky Mountain Biological Laboratory during the 2019 field season. Focal species include Mertensia fusiformis, Potentilla pulcherrima, and Delphinium nuttallianum. 
 
 Our questions specifically ask: 
   1. how does blooming time affect seed set for individiuals in a population?
-  2. how does blooming time of populations affect seed set compared to other populations in a landscape?
-  3. how does accelerated snowmelt affect phenology and seed set on the individual and population level?
+  2. how do abiotic factors such as soil moisture affect individual seed set?
+  3. how do biotic factors such as conspecific density and pollen limitation affect individual seed set?
   
-Individuals of the three species were tagged in control and manipulated plots in eight sites across East River valley and Washington Gulch. Seed set was quantified as the count of total developed seeds in each individual. 
+We tagged individuals of the three species in control and manipulated plots in eight sites across East River valley and Washington Gulch. We tracked blooming time of those tagged individuals and conducted a pollen limitation experiment. Seed set was quantified as the count of total developed seeds and proportion of developed seeds in each individual. 
 
-Because there were sources of non-independence in this study, our statistical approach involves generalized linear mixed effects models. Before we ran these models, we converted phenological data to a "relative position" value that represents how many days before or after the community peak the individual was in bloom....
+Because there were sources of non-independence in this study, our statistical approach involves generalized linear mixed effects models. Our models includes site as a random effect and the following fixed effects: the interaction between being before or after the population peak and deviation from the peak and the interaction between conspecific density and plot treatment. A separate model included pollen limitation treatment.
 
 # Load Packages
 
 ```{r clearing environment}
-rm(list = ls())
+rm(list = ls()) #clearing environment
 ```
 
 ```{r packages}
@@ -196,9 +196,9 @@ Soil moisture is a covariate that may impact seed production. In the field, we m
 We are including all of the individuals of the three species and using species as a random effect.
 
 ```{r combining all of the seed data}
-condensed.mert<-mert[,c(-1,-19:-22,-29)] #removing unnecessary columns
-condensed.delph<-delph[,c(-1,-19:-27,-29,-35)]
-condensed.pot<-pot[,c(-1,-19:-27,-29,-32:-36)]
+condensed.mert<-mert[,c(-4,-20:-23,-30)] #removing unnecessary columns
+condensed.delph<-delph[,c(-4,-20:-28,-30,-36)]
+condensed.pot<-pot[,c(-4,-20:-28,-30,-33:-37)]
 all.seeds<-rbind(condensed.mert,condensed.delph,condensed.pot) #combining all of the data sets
 ```
 
@@ -225,35 +225,35 @@ The null model was the best for these data. None of the combinations of soil moi
 
 Generalized linear mixed effects models were appropriate for this analysis because the data contain sources of non-independence. Individual plants were located in the same site as other individuals and were likely genetically similar. Therefore, we considered site a random effect. 
 
-The response variable is total seeds, which is discrete and non-zero. The interaction between deviation and the early/late factor was a fixed effect, as well as pollen limitation treatment and the interaction between plot treatment and conspecific density. We would have included soil moisture as a covariate and fixed effect in our model, but soil moisture was not important for seed production. Each species is analyzed separately. 
+The response variable is total seeds, which is discrete and non-zero. The interaction between deviation and the early/late factor was a fixed effect, as well as the interaction between plot treatment and conspecific density. We would have included soil moisture as a covariate and fixed effect in our model, but soil moisture was not important for seed production. Each species is analyzed separately. 
 
 ## Mertensia
 
-We started by checking the distribution of the total seed counts.
+We started by limiting the individuals to the open treatment (excluding the hand-pollinated treatment) and by checking the distribution of the total seed counts.
 
 ```{r limiting Mertensia to open}
-mert<-mert[(mert$treat=="open"),] #removed hand pollination treatment
+mert.open<-mert[(mert$treat=="open"),] #removed hand pollination treatment
 ```
 
 ```{r checking Mertensia distribution}
-mert.nbinom<-fitdist(mert$dev.seed, "nbinom") #fitting Mertensia data to negative binomial distribution using fitdistplus
+mert.nbinom<-fitdist(mert.open$dev.seed, "nbinom") #fitting Mertensia data to negative binomial distribution using fitdistplus
 plot(mert.nbinom) #plotting to see the fit
 ```
 
 The Mertensia seed data fits a negative binomial distribution. The glmmADMB package is the best for modeling data with a negative binomial fit.
 
 ```{r Mertensia glmmadmb with relative position}
-mert.glmmadmb<-glmmadmb(dev.seed ~ deviation * early.late + plot.treat * number.conspecifics + (1|site), family = "nbinom2", data = mert) #Mertensia model for negative binomial data with glmmadmb package
+mert.glmmadmb<-glmmadmb(dev.seed ~ deviation * early.late + plot.treat * number.conspecifics + (1|site), family = "nbinom2", data = mert.open) #Mertensia model for negative binomial data with glmmadmb package
 #removed treat fixed effect (only open in data set)
 summary(mert.glmmadmb) #summary of model output
 ```
 
-The total number of developed seeds were unaffected by relative flowering time, number of conspecifics in bloom, or pollen limitation treatment. 
+We did not detect an effect of relative blooming time, conspecific density, or plot treatment on the total number of seeds in Mertensia individuals. 
 
-Below is the plot of seed set vs. relative position of blooming in the community for Mertensia individuals. Plot treatment is indicated by individual color, and treatment received (open or pollen-supplemented) is indicated by individual shape.
+Below is the plot of seed set vs. relative position of blooming in the population for Mertensia individuals. Plot treatment is indicated by individual color.
 
 ```{r Mertensia plot}
-ggplot(mert, aes(x=mert$relative.position, y=mert$dev.seed, group=mert$plot.treat)) +
+ggplot(mert.open, aes(x=mert.open$relative.position, y=mert.open$dev.seed, group=mert.open$plot.treat)) +
   labs(y="Total Developed Seeds",x="Days Relative to Population Peak Bloom", title="Effect of Mertensia Blooming Time on Total Developed Seeds") +
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
   scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
@@ -261,13 +261,10 @@ ggplot(mert, aes(x=mert$relative.position, y=mert$dev.seed, group=mert$plot.trea
   geom_smooth()
 ```
 
-While the line of best fit is somewhat unimodal, there is not a strong relationship between relative position of blooming time and total number of developed seeds.
-
-
 Now we'll try with the interaction between deviation and early/late instead of relative position in order to fit a linear model.
 
 ```{r Mertensia plot substituting relative position}
-ggplot(mert, aes(x=mert$deviation, y=mert$dev.seed, group= mert$early.late)) +
+ggplot(mert.open, aes(x=mert.open$deviation, y=mert.open$dev.seed, group= mert.open$early.late)) +
   labs(y="Total Developed Seeds",x="Days Relative to Population Peak Bloom", title="Effect of Mertensia Deviation from Peak on Total Developed Seeds") + theme_classic() +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
@@ -277,11 +274,10 @@ ggplot(mert, aes(x=mert$deviation, y=mert$dev.seed, group= mert$early.late)) +
   scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange"))
 ```
 
-
-Now we will look at conspecific density and its effects on total developed seeds.
+Now we will look at the effect of conspecific density and plot treatment on total developed seeds.
 
 ```{r Mertensia plot with conspecific density}
-ggplot(mert, aes(x=mert$number.conspecifics, y=mert$dev.seed, group= mert$plot.treat)) +
+ggplot(mert.open, aes(x=mert.open$number.conspecifics, y=mert.open$dev.seed, group= mert.open$plot.treat)) +
   labs(y="Total Developed Seeds",x="Conspecific Density", title="Effect of Mertensia Conspecific Density on Total Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
@@ -291,33 +287,42 @@ ggplot(mert, aes(x=mert$number.conspecifics, y=mert$dev.seed, group= mert$plot.t
   scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
 ```
 
-High conspecific density may have a negative effect on total number of developed seeds, but the relationship is fairly weak. There is no difference between control and manip.
+To test the pollen limitation individuals, we created a separate fixed effects model. This model has site and plot treatment as random effects and pollen limitation treatment as a fixed effect. The response variable is still total number of developed seeds in Mertensia individuals.
+
+```{r Mert glmmadmb pollen treat}
+mert.treat.glmmadmb<-glmmadmb(dev.seed ~ treat + (1|site/plot.treat), family = "nbinom2", data = mert) #Mertensia model for negative binomial data with glmmadmb package
+summary(mert.treat.glmmadmb) #summary of model output
+```
+
+We did not detect an effect of pollen limitation treatment on Mertensia total developed seeds.
 
 ## Delphinium
 
+For Delphinium, we again limited the individuals to open treatment individuals.
+
 ```{r limiting Delphinium to open}
-delph<-delph[(delph$treat=="open"),] #removed hand pollination treatment
+delph.open<-delph[(delph$treat=="open"),] #removed hand pollination treatment
 ```
 
 ```{r checking Delphinium distribution}
-delph.nbinom<-fitdist(delph$total.seeds, "nbinom") #fitting negative binomial distribution using fitdistplus package
+delph.nbinom<-fitdist(delph.open$total.seeds, "nbinom") #fitting negative binomial distribution using fitdistplus package
 plot(delph.nbinom) #plotting distribution fit
 ```
 
 The Delphinium data fits a negative binomial distribution. We will use the glmmADMB package again.
 
 ```{r Delphinium glmmADMB}
-delph.glmmadmb<-glmmadmb(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + (1|site), family = "nbinom2", data = delph) #Delphinium model for negative binomial data with glmmadmb package
+delph.glmmadmb<-glmmadmb(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + (1|site), family = "nbinom2", data = delph.open) #Delphinium model for negative binomial data with glmmadmb package
 #removed treat fixed effect (only open)
 summary(delph.glmmadmb) #summary of model output
 ```
 
-The relative blooming time, number of conspecifics in bloom, and pollen limitation treatment did not affect the total number of developed seeds.
+We did not detect an effect of relative blooming time, plot treatment, or conspecific density on the total developed seeds for Delphinium individuals.
 
-Below is the same plot for the Delphinium individuals.
+Below are the plots for the Delphinium individuals.
 
 ```{r Delphinium plot}
-ggplot(delph, aes(x=delph$relative.position, y=delph$total.seeds, group=plot.treat)) +
+ggplot(delph.open, aes(x=delph.open$relative.position, y=delph.open$total.seeds, group=plot.treat)) +
   labs(title="Effect of Delphinium Blooming Time on Total Developed Seeds", y="Total Developed Seeds",x="Days Relative to Population Peak Bloom") +
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
   scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
@@ -325,10 +330,9 @@ ggplot(delph, aes(x=delph$relative.position, y=delph$total.seeds, group=plot.tre
   geom_smooth()
 ```
 
-Delphinium developed seeds seem to peak in the manip and late in the control. There is also a slight increase near the population peak.
 
 ```{r delphinium plot substituting relative position}
-ggplot(delph, aes(x=delph$deviation, y=delph$total.seeds, group= delph$early.late)) +
+ggplot(delph.open, aes(x=delph.open$deviation, y=delph.open$total.seeds, group= delph.open$early.late)) +
   labs(y="Total Developed Seeds",x="Days Relative to Population Peak Bloom", title="Effect of Delphinium Deviation from Peak on Total Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
@@ -339,9 +343,8 @@ ggplot(delph, aes(x=delph$deviation, y=delph$total.seeds, group= delph$early.lat
 ```
 
 
-
 ```{r Delphinium plot with conspecific density}
-ggplot(delph, aes(x=delph$number.conspecifics, y=delph$total.seeds, group= delph$plot.treat)) +
+ggplot(delph.open, aes(x=delph.open$number.conspecifics, y=delph.open$total.seeds, group= delph.open$plot.treat)) +
   labs(y="Total Developed Seeds",x="Conspecific Density", title="Effect of Delphinium Conspecific Density on Total Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
@@ -351,29 +354,40 @@ ggplot(delph, aes(x=delph$number.conspecifics, y=delph$total.seeds, group= delph
   scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
 ```
 
+Again, we tested the pollen limitation in a separate mixed effects model. 
+
+```{r Delph glmmadmb pollen treat}
+delph.treat.glmmadmb<-glmmadmb(total.seeds ~ treat + (1|site/plot.treat), family = "nbinom2", data = delph) #Mertensia model for negative binomial data with glmmadmb package
+summary(delph.treat.glmmadmb) #summary of model output
+```
+
+We did not detect an effect of pollen limitation on the total developed seeds of Delphinium individuals.
+
 ## Potentilla
 
+We will begin by limiting the data to the open treatment Potentilla individuals.
+
 ```{r limiting Potentilla to open}
-pot<-pot[(pot$treat=="open"),] #removed hand pollination treatment
+pot.open<-pot[(pot$treat=="open"),] #removed hand pollination treatment
 ```
 
 ```{r checking Potentilla distribution}
-pot.nbinom<-fitdist(pot$total.seeds, "nbinom") #fitting negative binomial distribution using fitdistplus package
+pot.nbinom<-fitdist(pot.open$total.seeds, "nbinom") #fitting negative binomial distribution using fitdistplus package
 plot(pot.nbinom) #plotting distribution fit
 ```
 
 ```{r Potentilla glmm}
-pot.glmmadmb<-glmmadmb(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + plot.treat + (1|site), family = "nbinom2", data = pot) #Potentilla model for negative binomial data with glmmadmb package
+pot.glmmadmb<-glmmadmb(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + plot.treat + (1|site), family = "nbinom2", data = pot.open) #Potentilla model for negative binomial data with glmmadmb package
 #removed treat fixed effect (only open)
 summary(pot.glmmadmb) #summary of model output
 ```
 
-For Potentilla, as deviation from the popultion peak increases, developed seeds may increase (p=0.079). Additionally, the number of developed seeds was significantly greater in the manipulated plot (p=0.016), and as Potentilla individuals bloom later in the season compared to the population peak, the seed set may decrease (p=0.080). In terms of the density of conspecifics, as the number of conspecifics increased, the number of developed seeds increased (p=0.019). However, in the manipulated plot, as the number of conspecifics increased, the seed set decreased (p=0.049). (why???)
+We did not detect an effect of relative blooming time, plot treatment, or conspecific density on the total developed seeds of Potentilla individuals.
 
 Below is the plot for Potentilla individuals.
 
 ```{r Potentilla plot}
-ggplot(pot, aes(x=pot$relative.position, y=pot$total.seeds, group=plot.treat)) +
+ggplot(pot.open, aes(x=pot.open$relative.position, y=pot.open$total.seeds, group=plot.treat)) +
   labs(title="Effect of Potentilla Blooming Time on Total Developed Seeds", y="Total Developed Seeds",x="Days Relative to Population Peak Bloom") +
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
   scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
@@ -382,7 +396,7 @@ ggplot(pot, aes(x=pot$relative.position, y=pot$total.seeds, group=plot.treat)) +
 ```
 
 ```{r potentilla plot substituting relative position}
-ggplot(pot, aes(x=pot$deviation, y=pot$total.seeds, group= pot$early.late)) +
+ggplot(pot.open, aes(x=pot.open$deviation, y=pot.open$total.seeds, group= pot.open$early.late)) +
   labs(y="Total Developed Seeds",x="Days Relative to Population Peak Bloom",title="Effect of Potentilla Deviation from Peak on Total Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
@@ -393,7 +407,7 @@ ggplot(pot, aes(x=pot$deviation, y=pot$total.seeds, group= pot$early.late)) +
 ```
 
 ```{r Potentilla plot with conspecific density}
-ggplot(pot, aes(x=pot$number.conspecifics, y=pot$total.seeds, group= pot$plot.treat)) +
+ggplot(pot.open, aes(x=pot.open$number.conspecifics, y=pot.open$total.seeds, group= pot.open$plot.treat)) +
   labs(y="Total Developed Seeds",x="Conspecific Density", title="Effect of Potentilla Conspecific Density on Total Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
@@ -403,29 +417,43 @@ ggplot(pot, aes(x=pot$number.conspecifics, y=pot$total.seeds, group= pot$plot.tr
   scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
 ```
 
+Below is the mixed effects model for the pollen limitation treatments. 
+
+```{r Pot glmmadmb pollen treat}
+pot.treat.glmmadmb<-glmmadmb(total.seeds ~ treat + (1|site/plot.treat), family = "nbinom2", data = pot) #Mertensia model for negative binomial data with glmmadmb package
+summary(pot.treat.glmmadmb) #summary of model output
+```
+
+We did not detect an effect of the pollen limitation treatment on the total number of developed seeds for Potentilla individuals.
 
 # Mixed Effects Model with Proportion Data
 
-Only the Mertensia and Delphinium data included proportion of developed seeds to total seeds. 
+Only the Mertensia and Delphinium data included proportion of developed seeds to total seeds. When counting seeds for the Potentilla individuals, undeveloped seeds were difficult to distinguish from other elements of the carpel and were not included.
 
 ## Mertensia
 
+First, we had to calculate undeveloped seeds to use the cbind function for our proportion of developed seeds.
+
 ```{r Mertensia undeveloped seeds}
-mert$undev.seeds<-(mert$total.seeds-mert$dev.seed) #creating an undeveloped seed column for cbind
+mert.open$undev.seeds<-(mert.open$total.seeds-mert.open$dev.seed) #creating an undeveloped seed column for cbind
 ```
 
+Below is the mixed effects model for the proportion of developed seeds. The individuals are still only limited to the open treatment. 
+
 ```{r Mertensia proportion model}
-Mert.glmer<-glmer(cbind(dev.seed,undev.seeds) ~ deviation * early.late + plot.treat * number.conspecifics + (1|site), family = binomial, data = mert) #Mertensia model with proportion of developed seeds using lme4 package
+Mert.glmer<-glmer(cbind(dev.seed,undev.seeds) ~ deviation * early.late + plot.treat * number.conspecifics + (1|site), family = binomial, data = mert.open) #Mertensia model with proportion of developed seeds using lme4 package
 #removed treat fixed effect (only open in data set)
 summary(Mert.glmer)
 ```
 
-For Mertensia individuals, as deviation from the population peak increases, the proportion of developed seeds may decrease (p=0.0769). Additionally, as the number of conspecifics increases, the proportion of developed seeds may decrease (p=0.0572). In the manipulated plot, as conspecific density increases, seed set may decrease (p=0.0748).
+A marginally significant effect was detected in the interaction between deviation and early/late treatment and in the number of conspecifics main effect. As the number of conspecifics increased, seed set may have decreased.
+
+Below are the plots for Mertensia proportion data.
 
 ```{r Mertensia proportion plot}
-mert<-mert[!is.na(mert$prop.dev.seeds),] #removing NA values from proportion column
+mert.open<-mert.open[!is.na(mert.open$prop.dev.seeds),] #removing NA values from proportion column
 
-ggplot(mert, aes(x=mert$relative.position, y=mert$prop.dev.seeds, group=plot.treat)) +
+ggplot(mert.open, aes(x=mert.open$relative.position, y=mert.open$prop.dev.seeds, group=plot.treat)) +
   labs(y="Proportion of Developed Seeds",x="Days Relative to Population Peak Bloom",title="Effect of Mertensia Blooming Time on Proportion of Developed Seeds") +
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
   scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
@@ -434,7 +462,7 @@ ggplot(mert, aes(x=mert$relative.position, y=mert$prop.dev.seeds, group=plot.tre
 ```
 
 ```{r Mertensia deviation proportion plot}
-ggplot(mert, aes(x=mert$deviation, y=mert$prop.dev.seeds, group= mert$early.late)) +
+ggplot(mert.open, aes(x=mert.open$deviation, y=mert.open$prop.dev.seeds, group= mert.open$early.late)) +
   labs(y="Proportion of Developed Seeds",x="Days Relative to Population Peak Bloom",title="Effect of Mertensia Deviation from Peak on Proportion of Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
@@ -444,8 +472,10 @@ ggplot(mert, aes(x=mert$deviation, y=mert$prop.dev.seeds, group= mert$early.late
   scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange"))
 ```
 
+Despite a marginally significant interaction effect, the effect of deviation on early vs. late individuals was not strong for Mertensia proportions of developed seeds.
+
 ```{r mertensia plot conspecifics and proportions}
-ggplot(mert, aes(x=mert$number.conspecifics, y=mert$prop.dev.seeds, group= mert$plot.treat)) +
+ggplot(mert.open, aes(x=mert.open$number.conspecifics, y=mert.open$prop.dev.seeds, group= mert.open$plot.treat)) +
   labs(y="Proportion of Developed Seeds",x="Conspecific Density",title="Effect of Mertensia Conspecific Density on Proportion of Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
@@ -455,22 +485,36 @@ ggplot(mert, aes(x=mert$number.conspecifics, y=mert$prop.dev.seeds, group= mert$
   scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
 ```
 
+Finally, we will create the pollen limitation model for the Mertensia developed seeds. The model includes site and plot treatment as random effects like the models above. Now the proportion of developed seeds is the response variable.
+
+```{r Mert prop pollen treat}
+mert$undev.seeds<-(mert$total.seeds-mert$dev.seed) #creating an undeveloped seed column for cbind
+
+
+Mert.treat.glmer<-glmer(cbind(dev.seed,undev.seeds) ~ treat + (1|site/plot.treat), family = binomial, data = mert) #model with pollen lim treatment and proportion of developed seeds using lme4 package
+summary(Mert.treat.glmer) #summary of model results
+```
+
+We did not detect an effect of pollen supplementation on the proportions of developed seeds for Mertensia individuals.
+
 ## Delphinium
 
 ```{r Delphinium proportion model}
-delph$dev.seed.total<-delph$dev.seed+delph$dev.seed1 #creating developed seeds column
-delph$undev.seed.total<-delph$undev.seed+delph$undev.seed1 #creating undeveloped seeds column
+delph.open$dev.seed.total<-delph.open$dev.seed+delph.open$dev.seed1 #creating developed seeds column
+delph.open$undev.seed.total<-delph.open$undev.seed+delph.open$undev.seed1 #creating undeveloped seeds column
 
-Delph.glmer<-glmer(cbind(dev.seed.total,undev.seed.total) ~ deviation * early.late + plot.treat * number.conspecifics + (1|site), family = binomial, data = delph) #modeling Delphinium proportion of developed seeds with lme4 package
+Delph.glmer<-glmer(cbind(dev.seed.total,undev.seed.total) ~ deviation * early.late + plot.treat * number.conspecifics + (1|site), family = binomial, data = delph.open) #modeling Delphinium proportion of developed seeds with lme4 package
 #removed treat fixed effect (only open)
 summary(Delph.glmer)
 ```
 
-For Delphinium individuals, late individuals had significantly lower seed set (p=0.0156). As individuals deviated from the population peak more and bloomed much later in the season, the proportion of developed seeds increased significantly (p=5.89e-09). (why??) Plot treatment had an effect on proportion of developed seeds, in that the manipulated plot had a significantly higher proportion of developed seeds (p=0.0227). In terms of the conspecific density, as conspecific density increased, the proportion of developed seeds increased (p=0.0291). However, in the manipulated plot, as the number of conspecifics increased, the proportion of developed seeds significantly decreased (p=1.48e-06). (why??) Additionally, the open-hand pollen limitation treatment had a slightly positive effect on the proportion (p=0.0593).
+Relative blooming time, plot treatment, and conspecific density all had strongly significant effects on the proportion of developed seeds for Delphinium individuals. Deviation from the population peak negatively affected seed set. Early individuals had significanlty higher seed set than late individuals. Individuals in the manipulated plot had significantly higher seed set. Increased conspecific density had a positive effect on seed set.
+
+Below are the plots for the proportion of developed seeds in Delphinium individuals.
 
 ```{r Delphinium proportion plot}
-delph<-delph[!is.na(delph$prop.dev.seeds),] #removing NA values in proportion column
-ggplot(delph, aes(x=delph$relative.position, y=delph$prop.dev.seeds, group=plot.treat)) +
+delph.open<-delph.open[!is.na(delph.open$prop.dev.seeds),] #removing NA values in proportion column
+ggplot(delph.open, aes(x=delph.open$relative.position, y=delph.open$prop.dev.seeds, group=plot.treat)) +
   labs(title="Effect of Delphinium Blooming Time on Proportion of Developed Seeds", y="Proportion of Developed Seeds",x="Days Relative to Population Peak Bloom") +
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
   scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
@@ -479,7 +523,7 @@ ggplot(delph, aes(x=delph$relative.position, y=delph$prop.dev.seeds, group=plot.
 ```
 
 ```{r Delphinium deviation proportion plot}
-ggplot(delph, aes(x=delph$deviation, y=delph$prop.dev.seeds, group= delph$early.late)) +
+ggplot(delph.open, aes(x=delph.open$deviation, y=delph.open$prop.dev.seeds, group= delph.open$early.late)) +
   labs(y="Proportion of Developed Seeds",x="Days Relative to Population Peak Bloom",title="Effect of Delphinium Deviation from Peak on Proportion of Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
@@ -489,8 +533,10 @@ ggplot(delph, aes(x=delph$deviation, y=delph$prop.dev.seeds, group= delph$early.
   scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange"))
 ```
 
+The interaction effect shows an increased positive effect of deviation from the population peak on early individuals.
+
 ```{r Delphinium plot conspecifics and proportions}
-ggplot(delph, aes(x=delph$number.conspecifics, y=delph$prop.dev.seeds, group= delph$plot.treat)) +
+ggplot(delph.open, aes(x=delph.open$number.conspecifics, y=delph.open$prop.dev.seeds, group= delph.open$plot.treat)) +
   labs(y="Proportion of Developed Seeds",x="Conspecific Density",title="Effect of Delphinium Conspecific Density on Proportion of Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
@@ -499,6 +545,20 @@ ggplot(delph, aes(x=delph$number.conspecifics, y=delph$prop.dev.seeds, group= de
   labs(color="Plot Treatment") +
   scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue")) + xlim(0,110)
 ```
+
+The interaction effect shows a negative effect of conspecific density on individuals in the accelerated snowmelt plot and a positive effect on those in the control plot.
+
+Finally, we created the mixed effects model for the pollen supplemented Delphinium individuals. Like the Mertensia model above, site and plot treatment are random effects, pollen limitation treatment is the fixed effect, and proportion of developed seeds is the response variable.
+
+```{r delph prop pollen lim}
+delph$dev.seed.total<-delph$dev.seed+delph$dev.seed1 #creating developed seeds column
+delph$undev.seed.total<-delph$undev.seed+delph$undev.seed1 #creating undeveloped seeds column
+
+Delph.treat.glmer<-glmer(cbind(dev.seed.total,undev.seed.total) ~ treat + (1|site/plot.treat), family = binomial, data = delph) #modeling pollen lim and proportion of developed seeds with lme4 package
+summary(Delph.treat.glmer) #model summary
+```
+
+Delphinium proportions of developed seeds were significantly affected by pollen supplementation. Pollen supplementation significantly increased the proportion of developed seeds.
 
 # Session Info
 
