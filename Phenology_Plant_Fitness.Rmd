@@ -505,7 +505,7 @@ We did not detect an effect of pollen supplementation on the proportions of deve
 
 We had to find the total developed seeds and undeveloped seeds before creating the model. To do this, we combined the seed counts of the first flower in bloom with the rest of the flowers on the plant.
 
-```{r Delphinium proportion model,warning=FALSE}
+```{r Delphinium proportion model,warning=FALSE, message=FALSE}
 delph.open$dev.seed.total<-delph.open$dev.seed+delph.open$dev.seed1 #creating developed seeds column
 delph.open$undev.seed.total<-delph.open$undev.seed+delph.open$undev.seed1 #creating undeveloped seeds column
 
