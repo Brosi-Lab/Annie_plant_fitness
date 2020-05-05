@@ -267,7 +267,7 @@ testDispersion(mert.counts.simulation) #checking for overdispersion
 testZeroInflation(mert.counts.simulation) #checking for zero inflation
 ```
 
-The Mertensia count data is not overdispersed or zero-inflated.
+The Mertensia count data is not overdispersed, but it is slightly zero-inflated.
 
 Below is the plot of seed set vs. relative position of blooming in the population for Mertensia individuals. Plot treatment is indicated by individual color.
 
