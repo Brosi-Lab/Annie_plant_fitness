@@ -360,7 +360,7 @@ delph.nbinom<-fitdist(delph.open$total.seeds, "nbinom") #fitting negative binomi
 plot(delph.nbinom) #plotting distribution fit
 ```
 
-The Delphinium data fits a negative binomial distribution. We used the glmmADMB package again.
+The Delphinium data fits a negative binomial distribution. We used the glmmTMB package again.
 
 ```{r Delphinium glmmTMB,warning=FALSE}
 delph.glmmtmb<-glmmTMB(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + (1|site), family = "nbinom2", data = delph.open) #Delphinium model for negative binomial data with glmmTMB package
@@ -457,7 +457,7 @@ pot.nbinom<-fitdist(pot.open$total.seeds, "nbinom") #fitting negative binomial d
 plot(pot.nbinom) #plotting distribution fit
 ```
 
-The Potentilla seed data fits a negative binomial distribution. We used the glmmADMB package again.
+The Potentilla seed data fits a negative binomial distribution. We used the glmmTMB package again.
 
 ```{r Potentilla glmmtmb,warning=FALSE}
 pot.glmmtmb<-glmmTMB(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + plot.treat + (1|site), family = "nbinom2", data = pot.open) #Potentilla model for negative binomial data with glmmTMB package
