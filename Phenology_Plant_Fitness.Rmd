@@ -218,9 +218,9 @@ all.seed.nbinom<-fitdist(all.seeds$total.seeds, "nbinom") #fitting Mertensia dat
 plot(all.seed.nbinom) #plotting to see the fit
 ```
 
-The seeds fit a negative binomial distribution, so we used the glmmADMB package.
+The seeds fit a negative binomial distribution, so we used the glmmTMB package.
 
-```{r soil model with glmmadmb, warning=FALSE}
+```{r soil model with glmmtmb, warning=FALSE}
 soil.mod<-glmmTMB(total.seeds ~ mean + rate + effect.min + end + range + (1|site/plot.treat) + (1|species), family = "nbinom2", data = all.seeds) #model for soil moisture variables with all seeds
 summary(soil.mod)
 ```
