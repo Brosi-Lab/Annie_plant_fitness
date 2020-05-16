@@ -229,7 +229,7 @@ summary(soil.mod)
 dredge_result<-dredge(soil.mod) #using dredge function for model selection
 subset(dredge_result, delta<4)
 ```
-After running the model selection, we found that rate of soil moisture was the best model, but the null model was a very close second. The delta values between the rate of change predictor and the null model are 0.03 apart, which is very little. Because the rate of change variable is not that different than the null model, we will not include the soil moisture predictor into our larger models later on. 
+After running the model selection, we found that rate of soil moisture was the best model, but the null model was a very close second. The delta values between the rate of change predictor and the null model are 0.03 apart, which is very little. Even though the rate variable is not very different from the null model, we added the rate of change in our main models to incorporate the soil moisture covariate. 
 
 
 # Mixed Effects Models with Count Data
@@ -254,7 +254,7 @@ plot(mert.nbinom) #plotting to see the fit
 The Mertensia seed data fits a negative binomial distribution. The glmmTMB package is a good package for modeling data with a negative binomial. The glmmTMB package is also suitable for data that could be overdispersed or zero-inflated.
 
 ```{r Mertensia glmmtmb with relative position, warning=FALSE}
-#mert.glmmtmb<-glmmTMB(dev.seed ~ deviation * early.late + plot.treat * number.conspecifics + (1|site), family = "nbinom2", data = mert.open) #putting count data into glmmTMB for DHARMa package
+#mert.glmmtmb<-glmmTMB(dev.seed ~ deviation * early.late + plot.treat * number.conspecifics + rate + (1|site), family = "nbinom2", data = mert.open) #putting count data into glmmTMB for DHARMa package
 #summary(mert.glmmtmb) #summary of glmmTMB model
 ```
 We did not detect an effect of relative blooming time, conspecific density, or plot treatment on the total number of seeds in Mertensia individuals. 
@@ -271,7 +271,7 @@ We then checked for overdispersion and zero-inflation in the data using the DHAR
 The Mertensia count data is not overdispersed, but it is slightly zero-inflated. To address this, we adjusted our glmmtmb model to include zero-inflation.
 
 ```{r correcting mert counts glmmtmb}
-mert.glmmtmb<-glmmTMB(dev.seed ~ deviation * early.late + plot.treat * number.conspecifics + (1|site), ziformula=~1, family = "nbinom2", data = mert.open) #putting count data into glmmTMB for DHARMa package
+mert.glmmtmb<-glmmTMB(dev.seed ~ deviation * early.late + plot.treat * number.conspecifics + rate + (1|site), ziformula=~1, family = "nbinom2", data = mert.open) #putting count data into glmmTMB for DHARMa package
 summary(mert.glmmtmb) #summary of glmmTMB model
 ```
 We then checked this new model for overdispersion and zero-inflation.
@@ -371,7 +371,7 @@ plot(delph.nbinom) #plotting distribution fit
 The Delphinium data fits a negative binomial distribution. We used the glmmTMB package again.
 
 ```{r Delphinium glmmTMB,warning=FALSE}
-delph.glmmtmb<-glmmTMB(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + (1|site), family = "nbinom2", data = delph.open) #Delphinium model for negative binomial data with glmmTMB package
+delph.glmmtmb<-glmmTMB(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + rate + (1|site), family = "nbinom2", data = delph.open) #Delphinium model for negative binomial data with glmmTMB package
 #removed treat fixed effect (only open)
 summary(delph.glmmtmb) #summary of model output
 ```
@@ -470,12 +470,12 @@ plot(pot.nbinom) #plotting distribution fit
 The Potentilla seed data fits a negative binomial distribution. We used the glmmTMB package again.
 
 ```{r Potentilla glmmtmb,warning=FALSE}
-#pot.glmmtmb<-glmmTMB(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + plot.treat + (1|site), family = "nbinom2", data = pot.open) #Potentilla model for negative binomial data with glmmTMB package
+#pot.glmmtmb<-glmmTMB(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + plot.treat + rate + (1|site), family = "nbinom2", data = pot.open) #Potentilla model for negative binomial data with glmmTMB package
 #removed treat fixed effect (only open)
 #summary(pot.glmmtmb) #summary of model output
 ```
 
-We did not detect an effect of relative blooming time, plot treatment, or conspecific density on the total developed seeds of Potentilla individuals.
+We did not detect an effect of relative blooming time, plot treatment, or conspecific density on the total developed seeds of Potentilla individuals. However, the rate of change of soil moisture had an effect on seed set for Potentilla individuals. As rate of change increased, the total number of developed seeds decreased.
 
 Below we checked overdispersion and zero-inflation.
 
@@ -488,10 +488,10 @@ Below we checked overdispersion and zero-inflation.
 The Potentilla data are not overdispersed, but they are zero-inflated. To fix this, we had to include zero inflation in our model and again check for zero-inflation.
 
 ```{r Potentilla new glmmtmb,warning=FALSE}
-pot.glmmtmb<-glmmTMB(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + plot.treat + (1|site), ziformula=~1, family = "nbinom2", data = pot.open) #new Potentilla model for negative binomial data with glmmTMB package
+pot.glmmtmb<-glmmTMB(total.seeds ~ deviation * early.late + plot.treat * number.conspecifics + plot.treat + rate + (1|site), ziformula=~1, family = "nbinom2", data = pot.open) #new Potentilla model for negative binomial data with glmmTMB package
 summary(pot.glmmtmb) #summary of model output
 ```
-When we incorporated zero-inflation into the model, we found a marginally significant trend in the interaction between deviation from the population peak and blooming before or after the population peak. Potentilla individuals that bloomed before the peak had a marginally significant increase in seed set. 
+When we incorporated zero-inflation into the model, we found a significant trend in the soil moisture variable. As the rate of change in soil moisture increases, the number of developed seeds in Potentilla individuals decreases. This was the same trend that we found in our previous model, but now the data are not overdispersed or zero-inflated. 
 
 However, we had to test for overdispersion and zero-inflation again.
 
@@ -586,12 +586,12 @@ mert.open$undev.seeds<-(mert.open$total.seeds-mert.open$dev.seed) #creating an u
 Below is the mixed effects model for the proportion of developed seeds. The individuals are still only limited to the open treatment. 
 
 ```{r Mertensia proportion model,warning=FALSE}
-Mert.prop.glmmtmb<-glmmTMB(cbind(dev.seed,undev.seeds) ~ deviation * early.late + plot.treat * number.conspecifics + (1|site), family = binomial, data = mert.open) #Mertensia model with proportion of developed seeds using the glmmTMB package
+Mert.prop.glmmtmb<-glmmTMB(cbind(dev.seed,undev.seeds) ~ deviation * early.late + plot.treat * number.conspecifics + rate + (1|site), family = binomial, data = mert.open) #Mertensia model with proportion of developed seeds using the glmmTMB package
 #removed treat fixed effect (only open in data set)
 summary(Mert.prop.glmmtmb)
 ```
 
-A marginally significant effect was detected in the interaction between deviation and early/late treatment and in the number of conspecifics main effect. As the number of conspecifics increased, seed set may have decreased.
+A significant effect was detected in the number of conspecifics and the rate of change in soil moisture. As the number of conspecifics increased, the proportion of developed seeds in Mertensia individuals decreased. For the soil moisture variable, as the rate of change in soil moisture increased, the proportion of developed seeds decreased. 
 
 Once we had our model, we were able to check for overdispersion and zero inflaction. We checked for overdispersion and zero inflation with the DHARMa package.
 
@@ -671,11 +671,11 @@ delph.open$undev.seed.total<-delph.open$undev.seed+delph.open$undev.seed1 #creat
 ```
 
 ```{r delphinium proportion model, warning=FALSE,message=FALSE}
-#Delph.prop.glmmtmb<-glmmTMB(cbind(dev.seed.total,undev.seed.total) ~ deviation * early.late + plot.treat * number.conspecifics + (1|site/plot.treat), family = binomial, data = delph.open) #modeling Delphinium proportion of developed seeds with glmmTMB package
+#Delph.prop.glmmtmb<-glmmTMB(cbind(dev.seed.total,undev.seed.total) ~ deviation * early.late + plot.treat * number.conspecifics + rate + (1|site), family = binomial, data = delph.open) #modeling Delphinium proportion of developed seeds with glmmTMB package
 #removed treat fixed effect (only open)
 #summary(Delph.prop.glmmtmb)
 ```
-We detected significant effects of plot treatment and the interaction between plot treatment and the number of conspecifics. Delphinium individuals in the manipulated plot had significantly higher seed set than individuals in the control plot.
+Our model shows that relative position, plot treatment, and number of conspecifics had an effect on seed set. We see a marginally significant trend that late individuals have lower seed set than early individuals. The manipulated individuals had significantly higher seed set than the control individuals. Also, there was a significant interaction between number of conspecifics and plot treatment.
 
 We again tested for overdispersion and zero inflation. We used the DHARMa package for the Delphinium proportion data.
 
@@ -688,7 +688,7 @@ We again tested for overdispersion and zero inflation. We used the DHARMa packag
 Our Delphinium proportion data is overdispersed and zero-inflated. We adjusted our model to correct for these issues. To fix overdispersion, we are using a betabinomial family, and we added a zero-inflation formula to correct zero-inflation.
 
 ```{r new delph model, warning=FALSE, message=FALSE}
-Delph.prop.glmmtmb<-glmmTMB(cbind(dev.seed.total,undev.seed.total) ~ deviation * early.late + plot.treat * number.conspecifics + (1|site/plot.treat), ziformula=~1, family = betabinomial, data = delph.open) #modeling Delphinium proportion of developed seeds with betabinomial family and ziformula
+Delph.prop.glmmtmb<-glmmTMB(cbind(dev.seed.total,undev.seed.total) ~ deviation * early.late + plot.treat * number.conspecifics + rate + (1|site), ziformula=~1, family = betabinomial, data = delph.open) #modeling Delphinium proportion of developed seeds with betabinomial family and ziformula
 summary(Delph.prop.glmmtmb) #summary of model output
 ```
 After correcting for overdispersion and zero-inflation, we did not detect an effect of relative blooming time, conspecific density, or plot treatment on the proportion of developed seeds for Delphinium individuals.
