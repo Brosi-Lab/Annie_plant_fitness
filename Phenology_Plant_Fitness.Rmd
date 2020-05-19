@@ -47,6 +47,8 @@ suppressWarnings(suppressPackageStartupMessages(require(MuMIn)))
 suppressWarnings(suppressPackageStartupMessages(require(lubridate)))
 suppressWarnings(suppressPackageStartupMessages(require(DHARMa)))
 suppressWarnings(suppressPackageStartupMessages(require(glmmTMB)))
+suppressWarnings(suppressPackageStartupMessages(require(dplyr)))
+suppressWarnings(suppressPackageStartupMessages(require(stringr)))
 ```
 
 # Data Import & Basic Formatting
@@ -193,6 +195,98 @@ pot.counts.by.site$week.estimate<-strftime(pot.counts.by.site$date, format = "%V
 
 pot<-merge(pot,pot.counts.by.site, by.x = c("site","plot.treat","week.estimate"), by.y = c("site","plot.treat","week.estimate")) #merging by site, plot treatment, and week estimate
 ```
+
+## Visitation Data
+
+Pollinator visitation is key to reproductive success for our three species. We created a variable to represent visitation to our tagged individuals. This variable is the average number of interactions/number of flowers for each species in the plot and site when the tagged individual was in bloom. For every tagged Mertensia, Delphinium, or Potentilla individual, we assigned a interactions/flowers value that represents the average visitation to the species during the individual's blooming duration. 
+
+We began by creating the interactions/flowers value for each week/plot/site for our three species.
+
+First, we converted the class of the date column to date and removed NA values from the network dataframe.
+
+```{r net date,message=FALSE}
+rmbl.net <- read.csv(file = "snowmelt_network.csv", stringsAsFactors = F) #read in network csv
+class(rmbl.net$date)
+rmbl.net$date <- as.Date(rmbl.net$date, format = "%m/%d/%y") #changed class of date column
+class(rmbl.net$date)
+```
+
+```{r fixing net NA issues, warning=FALSE, message=FALSE}
+head(rmbl.net)
+head(rmbl.net$date)
+rmbl.net$date < "2017-06-10"
+length(unique(rmbl.net$date)) ## 69 sampling dates
+unique(rmbl.net$date)
+sum(is.na(rmbl.net$date)) #removing NA values
+rmbl.net <- rmbl.net[which(is.na(rmbl.net$date) == F), ]
+```
+
+Next, we combined the interactions by date, site, plant, and plot to get the total number of interactions.
+
+```{r count interactions}
+rmbl.net.intxns <- rmbl.net %>% group_by(date, plant, site = rmbl.net$site, plot = rmbl.net$plot) %>% tally()
+colnames(rmbl.net.intxns)[length(colnames(rmbl.net.intxns))] <- 'num_intxns' #grouping interactions by date/plant/site/plot
+
+head(rmbl.net.intxns)
+```
+
+For the flower count data, first changed the date column to the date class and removed NA values.
+
+```{r flower counts, warning=FALSE,message=FALSE}
+head(flower.counts)
+sum(is.null(flower.counts$segment)) ## 0 
+sum(is.null(flower.counts$date)) ## 0 
+sum(is.null(flower.counts$plot)) ## 0 
+sum(is.null(flower.counts$plant)) ## 0 
+
+flower.counts$date <- as.Date(flower.counts$date) #converting class to date
+
+class(flower.counts$date)
+
+## fixing some more NAs
+flower.counts <- flower.counts[which(is.na(flower.counts$total_flowers) == F), ]
+flower.counts <- flower.counts[which(is.na(flower.counts$plant) == F), ]
+```
+
+As with the interactions, we combined the flower counts by date, plant, site, and plot.
+
+```{r summing flower counts}
+## sum the flower counts for each species
+rmbl.flower.sums <- flower.counts %>% group_by(date, plant, site = flower.counts$site, plot = flower.counts$plot) %>% summarise(total_flowers = sum(total_flowers))
+```
+
+We limited the data to Mertensia fusiformis, Delphinium nuttallianum, and Potentilla pulcherrima.
+
+```{r limiting to plants of interest}
+## define plants of interest
+int.plants <- c('Delphinium nuttallianum', 'Potentilla pulcherrima', 'Mertensia fusiformis')
+
+## find locations of those plants in the dataframe
+temp <- sapply(int.plants, function(x) {str_detect(rmbl.flower.sums$plant, x)})
+
+## index based on locations of plants of interest
+rmbl.flower.sub <- rmbl.flower.sums[which(rowSums(temp) == 1), ]
+
+## do the same for the interaction count dataframe
+temp <- sapply(int.plants, function(x) {str_detect(rmbl.net.intxns$plant, x)})
+
+## and index the interaction information of plants of interest
+rmbl.net.sub <- rmbl.net.intxns[which(rowSums(temp) == 1), ]
+```
+
+Next, we merged the totaled interaction data and the totaled flower count data. We were able to create the interactions per flower variable. Using this information, we can then match the average interactions/flowers to the blooming period of the individuals in our Mertensia, Delphinium, and Potentilla data frames. 
+
+```{r creating variable}
+rmbl.info <- merge(rmbl.net.sub, rmbl.flower.sub) #merging interaction and flower data frames
+
+rmbl.info$intxns_per_flower <- rmbl.info$num_intxns/rmbl.info$total_flowers #calculating the number of interactions per number of flowers
+
+rmbl.info<-rmbl.info[!(rmbl.info$plot=="Kaysee"),] #removing Kaysee's plots
+
+head(rmbl.info)
+```
+
+
 
 # Mixed Effects Models: Effect of Soil Moisture Variables on Total Seeds
 
