@@ -204,14 +204,14 @@ We began by creating the interactions/flowers value for each week/plot/site for 
 
 First, we converted the class of the date column to date and removed NA values from the network dataframe.
 
-```{r net date,message=FALSE}
+```{r net date,results="hide"}
 rmbl.net <- read.csv(file = "snowmelt_network.csv", stringsAsFactors = F) #read in network csv
 class(rmbl.net$date)
 rmbl.net$date <- as.Date(rmbl.net$date, format = "%m/%d/%y") #changed class of date column
 class(rmbl.net$date)
 ```
 
-```{r fixing net NA issues, warning=FALSE, message=FALSE}
+```{r fixing net NA issues, warning=FALSE, message=FALSE, results="hide"}
 head(rmbl.net)
 head(rmbl.net$date)
 rmbl.net$date < "2017-06-10"
@@ -232,7 +232,7 @@ head(rmbl.net.intxns)
 
 For the flower count data, first changed the date column to the date class and removed NA values.
 
-```{r flower counts, warning=FALSE,message=FALSE}
+```{r flower counts, warning=FALSE,message=FALSE,results="hide"}
 head(flower.counts)
 sum(is.null(flower.counts$segment)) ## 0 
 sum(is.null(flower.counts$date)) ## 0 
@@ -310,7 +310,7 @@ as.numeric(mert$bloom.wks)
 mert2<- merge(mert, visit.mert, by.x = c("site","plot.treat"), by.y = c("site","plot"), all = TRUE)
 as.numeric(mert2$bloom.wks)
 
-mert.visit.test<- mert2 %>% mutate(visitation = if_else(as.Date(date.y) %within% interval(as.Date(start.estimate),end=as.Date(end.estimate)), (intxns_per_flower/as.numeric(bloom.wks)), 0))
+mert2 %>% mutate(visitation = if_else(as.Date(date.y) %within% interval(as.Date(start.estimate),end=as.Date(end.estimate)), (intxns_per_flower/bloom.wks), 0))
 ```
 
 ### Delphinium
