@@ -286,7 +286,36 @@ rmbl.info<-rmbl.info[!(rmbl.info$plot=="Kaysee"),] #removing Kaysee's plots
 head(rmbl.info)
 ```
 
+Now that we have the number of interactions per number of flowers for our three species in each week/site/plot, we can add the average number of interactions/flowers for an individual's blooming period. To do this, we will have to separately add the variable to the species data frames. In the end, we will have a new variable in our Mertensia/Delphinium/Potentilla data frames that represents the average visits per flowers during the individual's duration of blooming. 
 
+### Mertensia
+
+```{r limit rmbl info to mertensia}
+visit.mert<-rmbl.info[(rmbl.info$plant=="Mertensia fusiformis"),] #limiting data to Mertensia
+```
+
+```{r extra data cleaning}
+visit.mert$site[visit.mert$site=="Wash 3C"]<-"WG3C"
+visit.mert$site[visit.mert$site=="Stupid Falls"]<-"StupidFalls"
+visit.mert$plot[visit.mert$plot=="Manipulated"]<-"manip"
+visit.mert$plot[visit.mert$plot=="Control"]<-"control"
+```
+
+```{r creating 0 in visit.mert, message=FALSE}
+mert$bloom.wks<-abs(difftime(mert$start.estimate,mert$end.estimate, units = "weeks"))
+as.numeric(mert$bloom.wks)
+```
+
+```{r matching based on blooming, results=hide}
+mert2<- merge(mert, visit.mert, by.x = c("site","plot.treat"), by.y = c("site","plot"), all = TRUE)
+as.numeric(mert2$bloom.wks)
+
+mert.visit.test<- mert2 %>% mutate(visitation = if_else(as.Date(date.y) %within% interval(as.Date(start.estimate),end=as.Date(end.estimate)), (intxns_per_flower/as.numeric(bloom.wks)), 0))
+```
+
+### Delphinium
+
+### Potentilla
 
 # Mixed Effects Models: Effect of Soil Moisture Variables on Total Seeds
 
