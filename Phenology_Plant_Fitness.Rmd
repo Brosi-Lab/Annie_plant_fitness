@@ -301,9 +301,25 @@ visit.mert$plot[visit.mert$plot=="Manipulated"]<-"manip"
 visit.mert$plot[visit.mert$plot=="Control"]<-"control"
 ```
 
-```{r creating 0 in visit.mert, message=FALSE}
-mert$bloom.wks<-abs(difftime(mert$start.estimate,mert$end.estimate, units = "weeks"))
-as.numeric(mert$bloom.wks)
+In mert data frame, convert bloom start and end estimates to week number.
+
+```{r converting to week number mert, message=FALSE}
+#mert$bloom.wk.start<-week(ymd(mert$start.estimate))
+#mert$bloom.wk.end<-week(ymd(mert$end.estimate))
+```
+
+In visit.mert data frame, convert collection dates to week number. see if there's a function to add data for all the zeros
+
+```{r converting to week number visit.mert}
+#visit.mert$week<-week(ymd(visit.mert$date))
+```
+
+```{r creating 0 in other weeks}
+#plcholder<-data.frame(week=c(1:35), 'intxns_per_flower'=0)
+```
+
+```{r merging to include other weeks}
+#visit.mert <- visit.mert %>% complete(week, nesting(site,plot), fill=list(intxns_per_flower=0))
 ```
 
 ```{r matching based on blooming, results=hide}
