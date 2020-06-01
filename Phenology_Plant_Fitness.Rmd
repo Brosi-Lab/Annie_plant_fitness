@@ -196,142 +196,6 @@ pot.counts.by.site$week.estimate<-strftime(pot.counts.by.site$date, format = "%V
 pot<-merge(pot,pot.counts.by.site, by.x = c("site","plot.treat","week.estimate"), by.y = c("site","plot.treat","week.estimate")) #merging by site, plot treatment, and week estimate
 ```
 
-## Visitation Data
-
-Pollinator visitation is key to reproductive success for our three species. We created a variable to represent visitation to our tagged individuals. This variable is the average number of interactions/number of flowers for each species in the plot and site when the tagged individual was in bloom. For every tagged Mertensia, Delphinium, or Potentilla individual, we assigned a interactions/flowers value that represents the average visitation to the species during the individual's blooming duration. 
-
-We began by creating the interactions/flowers value for each week/plot/site for our three species.
-
-First, we converted the class of the date column to date and removed NA values from the network dataframe.
-
-```{r net date,results="hide"}
-rmbl.net <- read.csv(file = "snowmelt_network.csv", stringsAsFactors = F) #read in network csv
-class(rmbl.net$date)
-rmbl.net$date <- as.Date(rmbl.net$date, format = "%m/%d/%y") #changed class of date column
-class(rmbl.net$date)
-```
-
-```{r fixing net NA issues, warning=FALSE, message=FALSE, results="hide"}
-head(rmbl.net)
-head(rmbl.net$date)
-rmbl.net$date < "2017-06-10"
-length(unique(rmbl.net$date)) ## 69 sampling dates
-unique(rmbl.net$date)
-sum(is.na(rmbl.net$date)) #removing NA values
-rmbl.net <- rmbl.net[which(is.na(rmbl.net$date) == F), ]
-```
-
-Next, we combined the interactions by date, site, plant, and plot to get the total number of interactions.
-
-```{r count interactions}
-rmbl.net.intxns <- rmbl.net %>% group_by(date, plant, site = rmbl.net$site, plot = rmbl.net$plot) %>% tally()
-colnames(rmbl.net.intxns)[length(colnames(rmbl.net.intxns))] <- 'num_intxns' #grouping interactions by date/plant/site/plot
-
-head(rmbl.net.intxns)
-```
-
-For the flower count data, first changed the date column to the date class and removed NA values.
-
-```{r flower counts, warning=FALSE,message=FALSE,results="hide"}
-head(flower.counts)
-sum(is.null(flower.counts$segment)) ## 0 
-sum(is.null(flower.counts$date)) ## 0 
-sum(is.null(flower.counts$plot)) ## 0 
-sum(is.null(flower.counts$plant)) ## 0 
-
-flower.counts$date <- as.Date(flower.counts$date) #converting class to date
-
-class(flower.counts$date)
-
-## fixing some more NAs
-flower.counts <- flower.counts[which(is.na(flower.counts$total_flowers) == F), ]
-flower.counts <- flower.counts[which(is.na(flower.counts$plant) == F), ]
-```
-
-As with the interactions, we combined the flower counts by date, plant, site, and plot.
-
-```{r summing flower counts}
-## sum the flower counts for each species
-rmbl.flower.sums <- flower.counts %>% group_by(date, plant, site = flower.counts$site, plot = flower.counts$plot) %>% summarise(total_flowers = sum(total_flowers))
-```
-
-We limited the data to Mertensia fusiformis, Delphinium nuttallianum, and Potentilla pulcherrima.
-
-```{r limiting to plants of interest}
-## define plants of interest
-int.plants <- c('Delphinium nuttallianum', 'Potentilla pulcherrima', 'Mertensia fusiformis')
-
-## find locations of those plants in the dataframe
-temp <- sapply(int.plants, function(x) {str_detect(rmbl.flower.sums$plant, x)})
-
-## index based on locations of plants of interest
-rmbl.flower.sub <- rmbl.flower.sums[which(rowSums(temp) == 1), ]
-
-## do the same for the interaction count dataframe
-temp <- sapply(int.plants, function(x) {str_detect(rmbl.net.intxns$plant, x)})
-
-## and index the interaction information of plants of interest
-rmbl.net.sub <- rmbl.net.intxns[which(rowSums(temp) == 1), ]
-```
-
-Next, we merged the totaled interaction data and the totaled flower count data. We were able to create the interactions per flower variable. Using this information, we can then match the average interactions/flowers to the blooming period of the individuals in our Mertensia, Delphinium, and Potentilla data frames. 
-
-```{r creating variable}
-rmbl.info <- merge(rmbl.net.sub, rmbl.flower.sub) #merging interaction and flower data frames
-
-rmbl.info$intxns_per_flower <- rmbl.info$num_intxns/rmbl.info$total_flowers #calculating the number of interactions per number of flowers
-
-rmbl.info<-rmbl.info[!(rmbl.info$plot=="Kaysee"),] #removing Kaysee's plots
-
-head(rmbl.info)
-```
-
-Now that we have the number of interactions per number of flowers for our three species in each week/site/plot, we can add the average number of interactions/flowers for an individual's blooming period. To do this, we will have to separately add the variable to the species data frames. In the end, we will have a new variable in our Mertensia/Delphinium/Potentilla data frames that represents the average visits per flowers during the individual's duration of blooming. 
-
-### Mertensia
-
-```{r limit rmbl info to mertensia}
-visit.mert<-rmbl.info[(rmbl.info$plant=="Mertensia fusiformis"),] #limiting data to Mertensia
-```
-
-```{r extra data cleaning}
-visit.mert$site[visit.mert$site=="Wash 3C"]<-"WG3C"
-visit.mert$site[visit.mert$site=="Stupid Falls"]<-"StupidFalls"
-visit.mert$plot[visit.mert$plot=="Manipulated"]<-"manip"
-visit.mert$plot[visit.mert$plot=="Control"]<-"control"
-```
-
-In mert data frame, convert bloom start and end estimates to week number.
-
-```{r converting to week number mert, message=FALSE}
-#mert$bloom.wk.start<-week(ymd(mert$start.estimate))
-#mert$bloom.wk.end<-week(ymd(mert$end.estimate))
-```
-
-In visit.mert data frame, convert collection dates to week number. see if there's a function to add data for all the zeros
-
-```{r converting to week number visit.mert}
-#visit.mert$week<-week(ymd(visit.mert$date))
-```
-
-```{r creating 0 in other weeks}
-#plcholder<-data.frame(week=c(1:35), 'intxns_per_flower'=0)
-```
-
-```{r merging to include other weeks}
-#visit.mert <- visit.mert %>% complete(week, nesting(site,plot), fill=list(intxns_per_flower=0))
-```
-
-```{r matching based on blooming, results=hide}
-mert2<- merge(mert, visit.mert, by.x = c("site","plot.treat"), by.y = c("site","plot"), all = TRUE)
-as.numeric(mert2$bloom.wks)
-
-mert2 %>% mutate(visitation = if_else(as.Date(date.y) %within% interval(as.Date(start.estimate),end=as.Date(end.estimate)), (intxns_per_flower/bloom.wks), 0))
-```
-
-### Delphinium
-
-### Potentilla
 
 # Mixed Effects Models: Effect of Soil Moisture Variables on Total Seeds
 
@@ -493,6 +357,23 @@ ggplot(mert.open, aes(x=mert.open$number.conspecifics, y=mert.open$dev.seed, gro
   scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
 ```
 
+Finally, we plotted all of the data with the pollinator active period. The pollinator active period was the time during which we saw interactions between pollinators and our species. The active period is shaded.
+
+```{r Mertensia poll act plot, message=FALSE}
+mert$midpoint2<-format(as.Date(mert$midpoint), format="%m-%d")
+
+ggplot(mert, aes(x=mert$midpoint2, y=mert$dev.seed, group= mert$treat)) +
+  labs(y="Total Developed Seeds",x="Date", title="Effect of Mertensia Blooming Time and Pollinator Activity on Total Developed Seeds") +
+  theme_classic() +
+  geom_point(size=3, alpha = 0.8, aes(color=treat)) +
+  geom_smooth(aes(color=treat)) +
+  scale_color_brewer(palette="Dark2") + 
+  labs(color="Open or Hand-pollinated") +
+  scale_color_manual(labels= c("open","open-hand"), values = c("open"="darkred","open-hand"="darkorange")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  annotate("rect",xmin="06-19", xmax="07-03",ymin=0,ymax=Inf,alpha=0.1)
+```
+
 
 ## Delphinium
 
@@ -592,6 +473,22 @@ ggplot(delph.open, aes(x=delph.open$number.conspecifics, y=delph.open$total.seed
   scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
 ```
 
+Finally, we plotted the pollinator active period with the total number of developed seeds and midpoint of individuals.
+
+```{r delph poll act plot, message=FALSE}
+delph$midpoint2<-format(as.Date(delph$midpoint), format="%m-%d")
+
+ggplot(delph, aes(x=delph$midpoint2, y=delph$total.seeds, group= delph$treat)) +
+  labs(y="Total Developed Seeds",x="Date", title="Effect of Delphinium Blooming Time and Pollinator Activity on Total Developed Seeds") +
+  theme_classic() +
+  geom_point(size=3, alpha = 0.8, aes(color=treat)) +
+  geom_smooth(aes(color=treat)) +
+  scale_color_brewer(palette="Dark2") + 
+  labs(color="Open or Hand-pollinated") +
+  scale_color_manual(labels= c("open","open-hand"), values = c("open"="darkred","open-hand"="darkorange")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  annotate("rect",xmin="06-27", xmax="07-18",ymin=0,ymax=Inf,alpha=0.1)
+```
 
 ## Potentilla
 
@@ -709,6 +606,22 @@ ggplot(pot.open, aes(x=pot.open$number.conspecifics, y=pot.open$total.seeds, gro
   scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
 ```
 
+Again we plotted the pollinator activity period.
+
+```{r pot poll act plot, message=FALSE}
+pot$midpoint2<-format(as.Date(pot$midpoint), format="%m-%d")
+
+ggplot(pot,aes(x=pot$midpoint2, y=pot$total.seeds, group= pot$treat)) +
+  labs(y="Total Developed Seeds",x="Date", title="Effect of Potentilla Blooming Time and Pollinator Activity on Total Developed Seeds") +
+  theme_classic() +
+  geom_point(size=3, alpha = 0.8, aes(color=treat)) +
+  geom_smooth(aes(color=treat)) +
+  scale_color_brewer(palette="Dark2") + 
+  labs(color="Open or Hand-pollinated") +
+  scale_color_manual(labels= c("open","open-hand"), values = c("open"="darkred","open-hand"="darkorange")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  annotate("rect",xmin="07-05", xmax="08-24",ymin=0,ymax=Inf,alpha=0.1)
+```
 
 # Mixed Effects Model with Proportion Data
 
@@ -798,6 +711,21 @@ ggplot(mert.open, aes(x=mert.open$number.conspecifics, y=mert.open$prop.dev.seed
   scale_color_brewer(palette="Dark2") + 
   labs(color="Plot Treatment") +
   scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
+```
+
+Finally, we added pollinator activity.
+
+```{r Mertensia prop poll act plot, message=FALSE}
+ggplot(mert, aes(x=mert$midpoint2, y=mert$prop.dev.seeds, group= mert$treat)) +
+  labs(y="Proportion of Developed Seeds",x="Date", title="Effect of Mertensia Blooming Time and Pollinator Activity on Proportion of Developed Seeds") +
+  theme_classic() +
+  geom_point(size=3, alpha = 0.8, aes(color=treat)) +
+  geom_smooth(aes(color=treat)) +
+  scale_color_brewer(palette="Dark2") + 
+  labs(color="Open or Hand-pollinated") +
+  scale_color_manual(labels= c("open","open-hand"), values = c("open"="darkred","open-hand"="darkorange")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  annotate("rect",xmin="06-19", xmax="07-03",ymin=0,ymax=Inf,alpha=0.1)
 ```
 
 ## Delphinium
@@ -914,6 +842,20 @@ ggplot(delph.open, aes(x=delph.open$number.conspecifics, y=delph.open$prop.dev.s
   scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue")) + xlim(0,110)
 ```
 
+Finally, we added pollinator activity.
+
+```{r delph poll act prop plot, message=FALSE}
+ggplot(delph, aes(x=delph$midpoint2, y=delph$prop.dev.seeds, group= delph$treat)) +
+  labs(y="Proportion of Developed Seeds",x="Date", title="Effect of Delphinium Blooming Time and Pollinator Activity on Proportion of Developed Seeds") +
+  theme_classic() +
+  geom_point(size=3, alpha = 0.8, aes(color=treat)) +
+  geom_smooth(aes(color=treat)) +
+  scale_color_brewer(palette="Dark2") + 
+  labs(color="Open or Hand-pollinated") +
+  scale_color_manual(labels= c("open","open-hand"), values = c("open"="darkred","open-hand"="darkorange")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  annotate("rect",xmin="06-27", xmax="07-18",ymin=0,ymax=Inf,alpha=0.1)
+```
 
 # Session Info
 
