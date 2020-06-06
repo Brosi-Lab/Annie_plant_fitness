@@ -49,6 +49,7 @@ suppressWarnings(suppressPackageStartupMessages(require(DHARMa)))
 suppressWarnings(suppressPackageStartupMessages(require(glmmTMB)))
 suppressWarnings(suppressPackageStartupMessages(require(dplyr)))
 suppressWarnings(suppressPackageStartupMessages(require(stringr)))
+suppressWarnings(suppressPackageStartupMessages(require(scales)))
 ```
 
 # Data Import & Basic Formatting
@@ -609,10 +610,8 @@ ggplot(pot.open, aes(x=pot.open$number.conspecifics, y=pot.open$total.seeds, gro
 Again we plotted the pollinator activity period.
 
 ```{r pot poll act plot, message=FALSE}
-pot$midpoint2<-format(as.Date(pot$midpoint), format="%m-%d")
-
-ggplot(pot,aes(x=pot$midpoint2, y=pot$total.seeds, group= pot$treat)) +
-  labs(y="Total Developed Seeds",x="Date", title="Effect of Potentilla Blooming Time and Pollinator Activity on Total Developed Seeds") +
+ggplot(pot,aes(x=as.Date.factor(pot$midpoint), y=pot$total.seeds, group= pot$treat)) +
+  labs(y="Total Developed Seeds",x="Date", title="Pollinator Activity Period and Total Developed Seeds in Potentilla") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=treat)) +
   geom_smooth(aes(color=treat)) +
@@ -620,7 +619,8 @@ ggplot(pot,aes(x=pot$midpoint2, y=pot$total.seeds, group= pot$treat)) +
   labs(color="Open or Hand-pollinated") +
   scale_color_manual(labels= c("open","open-hand"), values = c("open"="darkred","open-hand"="darkorange")) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  annotate("rect",xmin="07-05", xmax="08-24",ymin=0,ymax=Inf,alpha=0.1)
+  annotate("rect",xmin=as.Date.character("2019-07-05"), xmax=as.Date.character("2019-08-24"),ymin=0,ymax=Inf,alpha=0.1) +
+  scale_x_date(date_breaks = "3 days", date_labels = "%m/%d")
 ```
 
 # Mixed Effects Model with Proportion Data
@@ -716,8 +716,8 @@ ggplot(mert.open, aes(x=mert.open$number.conspecifics, y=mert.open$prop.dev.seed
 Finally, we added pollinator activity.
 
 ```{r Mertensia prop poll act plot, message=FALSE}
-ggplot(mert, aes(x=mert$midpoint2, y=mert$prop.dev.seeds, group= mert$treat)) +
-  labs(y="Proportion of Developed Seeds",x="Date", title="Effect of Mertensia Blooming Time and Pollinator Activity on Proportion of Developed Seeds") +
+ggplot(mert, aes(x=as.Date.factor(mert$midpoint), y=mert$prop.dev.seeds, group= mert$treat)) +
+  labs(y="Proportion of Developed Seeds",x="Date", title="Pollinator Activity Period and Proportion of Developed Seeds in Mertensia") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=treat)) +
   geom_smooth(aes(color=treat)) +
@@ -725,7 +725,8 @@ ggplot(mert, aes(x=mert$midpoint2, y=mert$prop.dev.seeds, group= mert$treat)) +
   labs(color="Open or Hand-pollinated") +
   scale_color_manual(labels= c("open","open-hand"), values = c("open"="darkred","open-hand"="darkorange")) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  annotate("rect",xmin="06-19", xmax="07-03",ymin=0,ymax=Inf,alpha=0.1)
+  annotate("rect",xmin=as.Date.character("2019-06-19"), xmax=as.Date.character("2019-07-03"),ymin=0,ymax=Inf,alpha=0.1) +
+  scale_x_date(date_breaks = "3 days", date_labels = "%m/%d")
 ```
 
 ## Delphinium
@@ -845,8 +846,8 @@ ggplot(delph.open, aes(x=delph.open$number.conspecifics, y=delph.open$prop.dev.s
 Finally, we added pollinator activity.
 
 ```{r delph poll act prop plot, message=FALSE}
-ggplot(delph, aes(x=as.Date(delph$midpoint2), y=delph$prop.dev.seeds, group= delph$treat)) +
-  labs(y="Proportion of Developed Seeds",x="Date", title="Effect of Delphinium Blooming Time and Pollinator Activity on Proportion of Developed Seeds") +
+ggplot(delph, aes(x=as.Date.factor(delph$midpoint), y=delph$prop.dev.seeds, group= delph$treat)) +
+  labs(y="Proportion of Developed Seeds",x="Date", title="Pollinator Activity Period and Proportion of Developed Seeds in Delphinium") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=treat)) +
   geom_smooth(aes(color=treat)) +
@@ -854,8 +855,8 @@ ggplot(delph, aes(x=as.Date(delph$midpoint2), y=delph$prop.dev.seeds, group= del
   labs(color="Open or Hand-pollinated") +
   scale_color_manual(labels= c("open","open-hand"), values = c("open"="darkred","open-hand"="darkorange")) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  annotate("rect",xmin=as.Date("2019-06-27"), xmax=as.Date("2019-07-18"),ymin=0,ymax=Inf,alpha=0.1) +
-  scale_x_date(date_breaks = "7 days")
+  annotate("rect",xmin=as.Date.character("2019-06-27"), xmax=as.Date.character("2019-07-18"),ymin=0,ymax=Inf,alpha=0.1) +
+  scale_x_date(date_breaks = "3 days", date_labels = "%m/%d")
 ```
 
 # Session Info
