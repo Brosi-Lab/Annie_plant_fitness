@@ -229,7 +229,7 @@ soil.mod<-glmmTMB(total.seeds ~ mean + rate + effect.min + end + range + (1|site
 summary(soil.mod)
 ```
 
-```{r model selection with dredge}
+```{r model selection with dredge, message=FALSE}
 dredge_result<-dredge(soil.mod) #using dredge function for model selection
 subset(dredge_result, delta<4)
 ```
@@ -715,7 +715,7 @@ ggplot(mert.open, aes(x=mert.open$number.conspecifics, y=mert.open$prop.dev.seed
 
 Finally, we added pollinator activity.
 
-```{r Mertensia prop poll act plot, message=FALSE}
+```{r Mertensia prop poll act plot, message=FALSE, warning=FALSE}
 ggplot(mert, aes(x=as.Date.factor(mert$midpoint), y=mert$prop.dev.seeds, group= mert$treat)) +
   labs(y="Proportion of Developed Seeds",x="Date", title="Pollinator Activity Period and Proportion of Developed Seeds in Mertensia") +
   theme_classic() +
@@ -845,7 +845,7 @@ ggplot(delph.open, aes(x=delph.open$number.conspecifics, y=delph.open$prop.dev.s
 
 Finally, we added pollinator activity.
 
-```{r delph poll act prop plot, message=FALSE}
+```{r delph poll act prop plot, message=FALSE, warning=FALSE}
 ggplot(delph, aes(x=as.Date.factor(delph$midpoint), y=delph$prop.dev.seeds, group= delph$treat)) +
   labs(y="Proportion of Developed Seeds",x="Date", title="Pollinator Activity Period and Proportion of Developed Seeds in Delphinium") +
   theme_classic() +
