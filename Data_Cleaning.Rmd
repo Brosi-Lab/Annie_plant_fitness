@@ -21,13 +21,14 @@ We began by evaluating soil moisture as a covariate. We had to first determine w
 #Clearing Environment
 rm(list = ls())
 #Importing Data
-library(readxl)
 soil_moisture_attempt <- read_excel("~/Documents/BROSI/THESIS/Data Cleaning/soil moisture attempt.xlsx", 
-    sheet = "adjusted soil moisture")
+     sheet = "adjusted soil moisture")
+library(readxl)
 library(dplyr)
 library(reshape2)
 library(ggplot2)
 library(lubridate)
+library(RColorBrewer)
 ```
 
 ```{r transposing data, message=FALSE, warning=FALSE}
@@ -43,8 +44,12 @@ variable<-as.numeric(soil.summary$variable)
 #Plotting Soil Moisture vs. Week
 ggplot(soil.summary,aes(x=variable,y=value, group = interaction(site,plot.treat))) +
   geom_point(aes(color=plot.treat),size=3, alpha = 0.8) +
-  labs(y="Soil Moisture (%VWC)",x="Week",title="Soil Moisture in Manipulated and Control Plots") +
-  geom_smooth(se=F,aes(color=plot.treat))
+  labs(y="Soil Moisture (%VWC)",x="Week",title="Soil Moisture in Accelerated Snowmelt and Control Plots") +
+  geom_smooth(se=F,aes(color=plot.treat)) +
+  theme_classic() +
+  scale_color_brewer(palette = "Dark2") +
+  labs(color="Plot Treatment") +
+  scale_color_manual(labels=c("control","accelerated"), values = c("control"="darkred","manip"="darkorange"))
 ```
 
 Due to limitations in the field, a few of the sites already melted out before we got the first soil measurement. The largest gap in missing soil moisture measurements was 2 weeks for the Stupid Falls manipulated plot. To standardize the data, we created an effective start date for each of the plots that was 2 weeks after the recorded meltout date. 
