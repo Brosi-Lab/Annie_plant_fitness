@@ -332,6 +332,16 @@ ggplot(mert.open, aes(x=mert.open$relative.position, y=mert.open$dev.seed, group
   geom_smooth()
 ```
 
+```{r Mertensia linear plot, message=FALSE,warning=FALSE}
+ggplot(mert.open, aes(x=mert.open$relative.position, y=mert.open$dev.seed, group=mert.open$early.late)) +
+  labs(y="Total Developed Seeds",x="Days Relative to Population Peak Bloom", title="Effect of Mertensia Blooming Time on Total Developed Seeds") +
+  theme_classic() +
+  geom_point(aes(color=early.late),size=3, alpha = 0.8) +
+  scale_color_brewer(palette="Dark2") + labs(color="Before or After Peak") +
+  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange")) +
+  geom_smooth(method = "glm", aes(color=early.late))
+```
+
 We then plotted the interaction between deviation and early/late instead of relative position in order to fit a linear model.
 
 ```{r Mertensia plot substituting relative position, message=FALSE}
@@ -450,6 +460,15 @@ ggplot(delph.open, aes(x=delph.open$relative.position, y=delph.open$total.seeds,
   geom_smooth()
 ```
 
+```{r delph linear plot, message=FALSE,warning=FALSE}
+ggplot(delph.open, aes(x=delph.open$relative.position, y=delph.open$total.seeds, group=delph.open$early.late)) +
+  labs(y="Total Developed Seeds",x="Days Relative to Population Peak Bloom", title="Effect of Delphinium Blooming Time on Total Developed Seeds") +
+  theme_classic() +
+  geom_point(aes(color=early.late),size=3, alpha = 0.8) +
+  scale_color_brewer(palette="Dark2") + labs(color="Before or After Peak") +
+  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange")) +
+  geom_smooth(method = "glm", aes(color=early.late))
+```
 
 ```{r delphinium plot substituting relative position,message=FALSE}
 ggplot(delph.open, aes(x=delph.open$deviation, y=delph.open$total.seeds, group= delph.open$early.late)) +
@@ -583,6 +602,16 @@ ggplot(pot.open, aes(x=pot.open$relative.position, y=pot.open$total.seeds, group
   scale_color_brewer(palette="Dark2") + labs(color="Plot Treatment") +
   scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkred","manip"="darkorange")) +
   geom_smooth()
+```
+
+```{r pot linear plot, message=FALSE,warning=FALSE}
+ggplot(pot.open, aes(x=pot.open$relative.position, y=pot.open$total.seeds, group=pot.open$early.late)) +
+  labs(y="Total Developed Seeds",x="Days Relative to Population Peak Bloom", title="Effect of Potentilla Blooming Time on Total Developed Seeds") +
+  theme_classic() +
+  geom_point(aes(color=early.late),size=3, alpha = 0.8) +
+  scale_color_brewer(palette="Dark2") + labs(color="Before or After Peak") +
+  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange")) +
+  geom_smooth(method = "glm", aes(color=early.late))
 ```
 
 ```{r potentilla plot substituting relative position,message=FALSE}
