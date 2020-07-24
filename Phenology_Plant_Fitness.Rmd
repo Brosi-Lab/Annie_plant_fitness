@@ -929,7 +929,7 @@ The data are not overdispersed or zero-inflated.
 
 Next, we tested the effect of pollen limitation treatment. We again used the lmer function and the same fixed and random effects.
 
-```{r mert weights pollen treat,warning=FALSE}
+```{r changing mert weights pollen treat,warning=FALSE}
 mert$seed.weight<-mert$seed.weight*1000
 mert$seed.weight[mert$seed.weight=="0"] <- "0.0001" #eliminating zeros in data set
 mert$seed.weight<-as.numeric(mert$seed.weight) #changing to numeric
@@ -983,7 +983,7 @@ The data are not overdispersed or zero-inflated.
 
 Next, we again tested for the effect of pollen limitation treatment on seed weight.
 
-```{r delph weights pollen treat,warning=FALSE}
+```{r changing delph weights pollen treat,warning=FALSE}
 delph$seed.weight<-delph$weight1 + delph$weight.rest #combining weight of first flower seeds and the rest of the seeds
 delph$seed.weight<-delph$seed.weight*1000
 delph$seed.weight[delph$seed.weight=="0"] <- "0.0001" #eliminating zeros in data set
@@ -1037,13 +1037,13 @@ The data are not overdispersed or zero-inflated.
 
 Next, we tested the effect of pollen limitation treatment. We again used the lmer function and the same fixed and random effects.
 
-```{r mert weights pollen treat,warning=FALSE}
+```{r pot weights pollen treat,warning=FALSE}
 pot$total.seed.weight<-pot$total.seed.weight*1000
 pot$total.seed.weight[pot$total.seed.weight=="0"] <- "0.0001" #eliminating zeros in data set
 pot$total.seed.weight<-as.numeric(pot$total.seed.weight) #changing to numeric
 ```
 
-```{r mert pollen lim seed weights}
+```{r pot pollen lim seed weights}
 pot.treat.lmer<-lmer(total.seed.weight ~ treat + (1|site/plot.treat), data = pot) #Potentilla model for seed weight data and pollen lim treatment with lme4 package
 summary(pot.treat.lmer) #summary of model output
 ```
