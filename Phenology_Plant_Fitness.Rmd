@@ -905,7 +905,7 @@ mert.open$seed.weight<-as.numeric(mert.open$seed.weight) #changing to numeric
 
 We then checked the distribution. Because weight is a continuous variable, the data fit a gaussian distribution.
 
-```{r checking Mertensia seed distribution}
+```{r checking mert weight seed distribution}
 mert.gaus<-fitdist(mert.open$seed.weight, "norm") #fitting Mertensia data to normal distribution using fitdistplus
 plot(mert.gaus) #plotting to see the fit
 ```
@@ -960,7 +960,7 @@ delph.open$seed.weight<-as.numeric(delph.open$seed.weight) #changing to numeric
 
 We checked the distribution. Because weight is a continuous variable, the data fit a gaussian distribution.
 
-```{r checking Mertensia seed distribution}
+```{r checking delph weight seed distribution}
 delph.gaus<-fitdist(delph.open$seed.weight, "norm") #fitting Mertensia data to normal distribution using fitdistplus
 plot(delph.gaus) #plotting to see the fit
 ```
@@ -1014,7 +1014,7 @@ pot.open$total.seed.weight<-as.numeric(pot.open$total.seed.weight) #changing to 
 
 We then checked the distribution. Because weight is a continuous variable, the data fit a gaussian distribution.
 
-```{r checking pot seed distribution}
+```{r checking pot weight seed distribution}
 pot.gaus<-fitdist(pot.open$total.seed.weight, "norm") #fitting Potentilla data to normal distribution using fitdistplus
 plot(pot.gaus) #plotting to see the fit
 ```
