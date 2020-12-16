@@ -292,8 +292,8 @@ Zero-inflation is accounted for in the new model, and the model for Mertensia co
 To test the pollen limitation individuals, we created a separate fixed effects model. This model has site and plot treatment as random effects and the interaction between pollen limitation treatment and number of flowers as a fixed effect. We included this interaction because the difference in seed set between the open and hand treatments is heavily dependent on the number of flowers. The interaction accounts for the wide variation of number of flowers and ultimately developed seeds. The response variable is still total number of developed seeds in Mertensia individuals.
 
 ```{r Mert glmmtmb pollen treat, warning=FALSE}
-#mert.treat.glmmtmb<-glmmTMB(dev.seed ~ treat*flowers + (1|site/plot.treat), family = "nbinom2", data = mert) #Mertensia model for negative binomial data with glmmTMB package
-#summary(mert.treat.glmmtmb) #summary of model output
+mert.treat.glmmtmb<-glmmTMB(dev.seed ~ treat/flowers + (1|site/plot.treat), family = "nbinom2", data = mert) #Mertensia model for negative binomial data with glmmTMB package
+summary(mert.treat.glmmtmb) #summary of model output
 ```
 
 We did not detect an effect of pollen limitation treatment on Mertensia total developed seeds.
@@ -310,7 +310,7 @@ We had to test the model assumptions of our pollen limitation model as well. Aft
 The data in the pollen limitation model for Mertensia is not overdispersed, but it is zero-inflated. We then adjusted our model to include zero-inflation and ran the overdispersion and zero-inflation tests again.
 
 ```{r Mert new glmmtmb pollen treat, warning=FALSE}
-mert.treat.glmmtmb<-glmmTMB(dev.seed ~ treat*flowers + (1|site/plot.treat), ziformula=~1, family = "nbinom2", data = mert) #Mertensia model for negative binomial data with glmmTMB package
+mert.treat.glmmtmb<-glmmTMB(dev.seed ~ treat/flowers + (1|site/plot.treat), ziformula=~1, family = "nbinom2", data = mert) #Mertensia model for negative binomial data with glmmTMB package
 summary(mert.treat.glmmtmb) #summary of model output
 ```
 
