@@ -63,13 +63,14 @@ The first dataset contains the individual data for Mertensia fusiformis, which w
 
 ```{r Mertensia data import}
 mert = read.csv("Mertensia_final2.csv") # read in Mertensia data
-mert<-mert[!is.na(mert$relative.position),] #removing NA values from relative position column
-mert<-mert[!is.na(mert$dev.seed),]
 mert$prop.dev.seeds<-(mert$dev.seed/mert$total.seeds) #adding proportion of developed seeds
 mert$deviation<-abs(mert$relative.position) #getting deviation from the peak
 mert$early.late<-factor(NA, levels = c("early","late")) #creating early/late variables based on relative position
 mert$early.late[mert$relative.position<0]<-"early"
 mert$early.late[mert$relative.position>0]<-"late"
+mert$seeds.per.flower<-(mert$dev.seed/mert$flowers)
+mert<-mert[!is.na(mert$relative.position),] #removing NA values from relative position column
+mert<-mert[!is.na(mert$seeds.per.flower),] # removing NA from seeds per flower column
 mert<-mert[!is.na(mert$early.late),]
 ```
 
@@ -79,15 +80,16 @@ The second dataset contains individual data for Delphinium nuttallianum. Delphin
 
 ```{r Delphinium data import}
 delph = read.csv("Delphinium_final2.csv") # read in Delphinium data
-delph<-delph[!is.na(delph$total.seeds),] #removing NA values in seed column
-delph<-delph[!is.na(delph$relative.position),] #removing NA values in the relative position
-delph$undev.seed1[is.na(delph$undev.seed1)] <- 0 #converting NA to 0
 delph$prop.dev.seeds<-(delph$total.seeds/(delph$undev.seed1+delph$undev.seed+delph$total.seeds)) #adding proportion of developed seeds
 delph$deviation<-abs(delph$relative.position) #getting deviation from the peak
 delph$early.late<-factor(NA, levels = c("early","late")) #creating early/late variables based on relative position
 delph$early.late[delph$relative.position<0]<-"early"
 delph$early.late[delph$relative.position>0]<-"late"
+delph$seeds.per.flower<-((delph$dev.seed+delph$dev.seed1)/delph$X.flowers)
 delph<-delph[!is.na(delph$early.late),]
+delph<-delph[!is.na(delph$seeds.per.flower),] #removing NA values in seeds per flower column
+delph<-delph[!is.na(delph$relative.position),] #removing NA values in the relative position
+delph$undev.seed1[is.na(delph$undev.seed1)] <- 0 #converting NA to 0
 ```
 
 ## Potentilla Data
@@ -97,13 +99,16 @@ The third dataset contains Potentilla pulcherrima data. Potentilla was set up in
 ```{r Potentilla data import}
 pot = read.csv("Potentilla_final2.csv") # read in Potentilla data
 pot<-pot[c(-119,-223),] #removing one row with NA in treatment column
-pot<-pot[!is.na(pot$relative.position),] #removing NA values in relative position
-pot<-pot[!is.na(pot$total.seeds),] #removing NA values in total seeds column
 pot$deviation<-abs(pot$relative.position) #getting deviation from the peak
 pot$early.late<-factor(NA, levels = c("early","late")) #creating early/late variables based on relative position
 pot$early.late[pot$relative.position<0]<-"early"
 pot$early.late[pot$relative.position>0]<-"late"
-pot<-pot[!is.na(pot$early.late),]
+pot$fl.count.sharp[is.na(pot$fl.count.sharp)] <- 0 #converting NA to 0
+pot$seeds.per.flower<-((pot$dev.seed.sharp+pot$dev.seed.rest)/(pot$X.flowers+pot$fl.count.sharp))
+pot<-pot[!is.na(pot$early.late),] #removing NA values in early/late column
+pot<-pot[!is.na(pot$relative.position),] #removing NA values in relative position
+pot<-pot[!is.na(pot$total.seeds),] #removing NA values in total seeds column
+pot<-pot[!is.na(pot$seeds.per.flower),] #removing NA values in seeds per flower column
 ```
 
 Because many of the Potentilla individuals were still in bloom when we finished our field season, we had to calculate a midpoint and relative position based on those individuals that had senesced. A key factor that determines duration of blooming is the number of flowers on the individual. The data imported includes those relative position estimates for the individuals that didn't senesce before we finished our field season. For more information on how those numbers were calculated, see Data_Cleaning.Rmd.
@@ -1057,6 +1062,24 @@ testDispersion(pot.treat.weights.simulation) #checking for overdispersion
 testZeroInflation(pot.treat.weights.simulation) #checking for zero inflation
 ```
 The data are not overdispersed or zero-inflated.
+
+# Seeds per Flower Models
+
+```{r limiting Mertensia to open again}
+mert.open<-mert[(mert$treat=="open"),] #removed hand pollination treatment
+```
+
+```{r checking Mertensia distribution again}
+mert.nbinom<-fitdist(mert.open$seeds.per.flower, "nbinom") #fitting Mertensia data to negative binomial distribution using fitdistplus
+plot(mert.nbinom) #plotting to see the fit
+```
+
+The Mertensia seed data fits a negative binomial distribution. The glmmTMB package is a good package for modeling data with a negative binomial. The glmmTMB package is also suitable for data that could be overdispersed or zero-inflated.
+
+```{r Mertensia glmmtmb with relative position, warning=FALSE}
+#mert.glmmtmb<-glmmTMB(dev.seed ~ deviation * early.late + plot.treat * number.conspecifics + rate + (1|site), family = "nbinom2", data = mert.open) #putting count data into glmmTMB for DHARMa package
+#summary(mert.glmmtmb) #summary of glmmTMB model
+```
 
 # Session Info
 
