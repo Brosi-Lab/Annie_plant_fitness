@@ -246,9 +246,12 @@ summary(soil.mod)
 ```
 
 ```{r soil model with lme4, warning=FALSE}
-all.seeds$seeds.per.flower[all.seeds$seeds.per.flower==0]<-0.00001
-soil.mod2<-glmer(seeds.per.flower ~ mean + rate + effect.min + end + range + (1|site/plot.treat) + (1|species), family="Gamma",data = all.seeds,na.action = "na.fail") #model for soil moisture variables with all seeds
-summary(soil.mod2)
+all.seeds$non_zero <- ifelse(all.seeds$seeds.per.flower > 0, 1, 0) # creating zero/non-zero column
+soil.mod2.hurdle<-glmer(non_zero ~ mean + rate + effect.min + end + range + (1|site/plot.treat) + (1|species), data=all.seeds,family = binomial(link = logit)) # model with new column
+soil.mod2.gamma<-glmer(seeds.per.flower ~ mean + rate + effect.min + end + range + (1|site/plot.treat) + (1|species), family=Gamma(link = log),data = subset(all.seeds,non_zero==1)) # model without zeros
+
+#summary(soil.mod2.hurdle)
+summary(soil.mod2.gamma)
 ```
 
 Finally, we ran two models selections: one for the glmmTMB model with the count data and one for the glmer model with the seeds/flower data.
@@ -1093,15 +1096,15 @@ mert.open<-mert[(mert$treat=="open"),] #removed hand pollination treatment
 ```
 
 ```{r checking Mertensia distribution again}
-mert.norm<-fitdist(mert.open$seeds.per.flower, "norm") #fitting Mertensia data to normal distribution using fitdistplus
+mert.norm<-fitdist(mert.open$seeds.per.flower, "gamma") #fitting Mertensia data to normal distribution using fitdistplus
 plot(mert.norm) #plotting to see the fit
 ```
 
 The Mertensia seed data fits a gaussian distribution. The lmerTEST package is a good package for modeling data with a gaussian distribution. The lme4 package is also suitable for data that could be overdispersed or zero-inflated.
 
 ```{r Mertensia glmer with relative position, warning=FALSE}
-mert.lmer<-lmer(seeds.per.flower ~ deviation * early.late + plot.treat * number.conspecifics + rate + (1|site), data = mert.open) #putting seeds per flower data into lmer for DHARMa package
-summary(mert.lmer) #summary of glmer model
+mert.glmer<-glmer(seeds.per.flower ~ deviation * early.late + plot.treat * number.conspecifics + rate + (1|site), family="Gamma", data = mert.open) #putting seeds per flower data into lmer for DHARMa package
+summary(mert.glmer) #summary of glmer model
 ```
 
 ```{r checking mertensia seeds per flower overdispersion}
