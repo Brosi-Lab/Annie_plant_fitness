@@ -204,11 +204,13 @@ pot<-merge(pot,pot.counts.by.site, by.x = c("site","plot.treat","week.estimate")
 ```
 
 
-# Mixed Effects Models: Effect of Soil Moisture Variables on Total Seeds
+# Mixed Effects Models: Effect of Soil Moisture Variables on Total Seeds and Seeds per Flower
 
 Soil moisture is a covariate that may impact seed production. In the field, we measured soil moisture in designated areas of the plot once per week, for 9 weeks. To understand which variables representing change in soil moisture are most influential for seed production, we ran a generalized linear mixed model with all of the soil moisture variables. Site, plot treatment, and species are random effects, while the soil moisture variables (mean moisture, rate of change, effective minimum or value at week 7, final moisture reading, and range) are fixed effects. Once we had this model, we ran the dredge function to find the most appropriate combination of variables for our larger model.
 
 We are including all of the individuals of the three species and using species as a random effect.
+
+First, we combined the variables for the three species in order to run the model selection with all of the collected seeds.
 
 ```{r combining all of the seed data}
 condensed.mert<-mert[,c(-4,-20,-21,-23,-24,-30)] #removing unnecessary columns
@@ -223,23 +225,44 @@ condensed.pot<-condensed.pot[(condensed.pot$treat=="open"),]
 all.seeds<-rbind(condensed.mert,condensed.delph,condensed.pot) #combining all of the data sets
 ```
 
-```{r checking distribution for all seed data}
+We checked the distribution of the total number of developed seeds and found that they fit a negative binomial distribution.
+
+```{r checking distribution for total seed data}
 all.seed.nbinom<-fitdist(all.seeds$total.seeds, "nbinom") #fitting Mertensia data to negative binomial distribution using fitdistplus
 plot(all.seed.nbinom) #plotting to see the fit
 ```
 
-The seeds fit a negative binomial distribution, so we used the glmmTMB package.
+Next we checked the distribution for seeds per flower and found that they fit an exponential distribution.
+```{r checking distribution for seeds per flower data}
+all.seeds.exp<-fitdist(all.seeds$seeds.per.flower,"exp") #checking exponential distribution
+plot(all.seeds.exp) #plotting exponential distribution
+```
+
+Because the total seeds fit a negative binomial distribution, we used the glmmTMB package. Because the seeds per flower variable fit a exponential distribution, we used the lme4 package.
 
 ```{r soil model with glmmtmb, warning=FALSE}
 soil.mod<-glmmTMB(total.seeds ~ mean + rate + effect.min + end + range + (1|site/plot.treat) + (1|species), family = "nbinom2", data = all.seeds) #model for soil moisture variables with all seeds
 summary(soil.mod)
 ```
 
+```{r soil model with lme4, warning=FALSE}
+all.seeds$seeds.per.flower[all.seeds$seeds.per.flower==0]<-0.00001
+soil.mod2<-glmer(seeds.per.flower ~ mean + rate + effect.min + end + range + (1|site/plot.treat) + (1|species), family="Gamma",data = all.seeds,na.action = "na.fail") #model for soil moisture variables with all seeds
+summary(soil.mod2)
+```
+
+Finally, we ran two models selections: one for the glmmTMB model with the count data and one for the glmer model with the seeds/flower data.
+
 ```{r model selection with dredge, message=FALSE}
 dredge_result<-dredge(soil.mod) #using dredge function for model selection
 subset(dredge_result, delta<4)
 ```
-After running the model selection, we found that rate of soil moisture was the best model, but the null model was a very close second. The delta values between the rate of change predictor and the null model are 0.03 apart, which is very little. Even though the rate variable is not very different from the null model, we added the rate of change in our main models to incorporate the soil moisture covariate. 
+
+```{r model 2 selection with dredge, message=FALSE}
+dredge_result2<-dredge(soil.mod2) #using dredge function for model selection
+subset(dredge_result2, delta<4)
+```
+After running the model selections, we found that rate of soil moisture was the best model for the seeds/flower response variable and the end soil moisture was the best model for the seed count data. 
 
 
 # Mixed Effects Models with Count Data
@@ -1063,22 +1086,35 @@ testZeroInflation(pot.treat.weights.simulation) #checking for zero inflation
 ```
 The data are not overdispersed or zero-inflated.
 
-# Seeds per Flower Models
+# Mixed Effects Models with Seeds per Flower Data
 
 ```{r limiting Mertensia to open again}
 mert.open<-mert[(mert$treat=="open"),] #removed hand pollination treatment
 ```
 
 ```{r checking Mertensia distribution again}
-mert.nbinom<-fitdist(mert.open$seeds.per.flower, "nbinom") #fitting Mertensia data to negative binomial distribution using fitdistplus
-plot(mert.nbinom) #plotting to see the fit
+mert.norm<-fitdist(mert.open$seeds.per.flower, "norm") #fitting Mertensia data to normal distribution using fitdistplus
+plot(mert.norm) #plotting to see the fit
 ```
 
-The Mertensia seed data fits a negative binomial distribution. The glmmTMB package is a good package for modeling data with a negative binomial. The glmmTMB package is also suitable for data that could be overdispersed or zero-inflated.
+The Mertensia seed data fits a gaussian distribution. The lmerTEST package is a good package for modeling data with a gaussian distribution. The lme4 package is also suitable for data that could be overdispersed or zero-inflated.
 
-```{r Mertensia glmmtmb with relative position, warning=FALSE}
-#mert.glmmtmb<-glmmTMB(dev.seed ~ deviation * early.late + plot.treat * number.conspecifics + rate + (1|site), family = "nbinom2", data = mert.open) #putting count data into glmmTMB for DHARMa package
-#summary(mert.glmmtmb) #summary of glmmTMB model
+```{r Mertensia glmer with relative position, warning=FALSE}
+mert.lmer<-lmer(seeds.per.flower ~ deviation * early.late + plot.treat * number.conspecifics + rate + (1|site), data = mert.open) #putting seeds per flower data into lmer for DHARMa package
+summary(mert.lmer) #summary of glmer model
+```
+
+```{r checking mertensia seeds per flower overdispersion}
+mert.seeds.flower.simulation<-simulateResiduals(fittedModel = mert.lmer) #creating simulation for Mertensia mixed effects model with DHARMa package
+plot(mert.seeds.flower.simulation) #plotting simulation
+testDispersion(mert.seeds.flower.simulation) #checking for overdispersion
+testZeroInflation(mert.seeds.flower.simulation) #checking for zero inflation
+```
+It is zero-inflated. We rewrote the model to account for zero-inflation.
+
+```{r Mertensia glmer with zero inflation, warning=FALSE}
+mert.lmer<-lmer(seeds.per.flower ~ deviation * early.late + plot.treat * number.conspecifics + rate + (1|site), data = mert.open) #putting seeds per flower data into lmer for DHARMa package
+summary(mert.lmer) #summary of glmer model
 ```
 
 # Session Info
