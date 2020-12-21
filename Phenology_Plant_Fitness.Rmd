@@ -237,13 +237,15 @@ all.seeds$non_zero <- ifelse(all.seeds$seeds.per.flower > 0, 1, 0) # creating ze
 
 soil.mod2.hurdle<-glmer(non_zero ~ mean + rate + effect.min + end + range + (1|site/plot.treat) + (1|species), data=all.seeds,family = binomial) # model with new column
 
-soil.mod2.gamma<-glmer(seeds.per.flower ~ mean + rate + effect.min + end + range + (1|site/plot.treat) + (1|species), family=Gamma,data = subset(all.seeds,non_zero==1)) # model without zeros
+all.seeds.nonzero = subset(all.seeds,non_zero==1)
+soil.mod2<-glmer(seeds.per.flower ~ mean + rate + effect.min + end + range + (1|site/plot.treat) + (1|species), family=Gamma,data = all.seeds.nonzero,na.action = "na.fail") # model without zeros
 
 summary(soil.mod2.hurdle) # viewing model results
-summary(soil.mod2.gamma)
+summary(soil.mod2)
 ```
+In our soil moisture hurdle model, the soil moisture variables did not affect the success or failure of the plants to produce seeds (zero-nonzero), and a few soil moisture variables did affect the number of seeds/flower. Therefore, we can run a model selection on the second model that excludes the zeros.
 
-Finally, we ran two models selections: one for the glmmTMB model with the count data and one for the glmer model with the seeds/flower data.
+We ran two models selections: one for the glmmTMB model with the count data and one for the glmer model with the seeds/flower data.
 
 ```{r model selection with dredge, message=FALSE}
 dredge_result<-dredge(soil.mod) #using dredge function for model selection
@@ -252,8 +254,7 @@ subset(dredge_result, delta<4)
 dredge_result2<-dredge(soil.mod2) #using dredge function for model selection
 subset(dredge_result2, delta<4)
 ```
-After running the model selections, we found that rate of soil moisture was the best model for the seeds/flower response variable and the end soil moisture was the best model for the seed count data. 
-
+After running the model selections, we found that rate of soil moisture with effective minimum moisture was the best model for the seeds/flower response variable and the end soil moisture was the best model for the seed count data. 
 
 # Mixed Effects Models with Count Data
 
