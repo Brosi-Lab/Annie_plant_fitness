@@ -786,13 +786,13 @@ delph$undev.seed.total<-delph$undev.seed+delph$undev.seed1 #creating undeveloped
 ```
 
 ```{r delph prop pollen lim model, warning=FALSE}
-Delph.prop.treat.glmmtmb<-glmmTMB(cbind(dev.seed.total,undev.seed.total) ~ treat/X.flowers + (1|site/plot.treat), family = binomial, data = delph) #modeling pollen lim and proportion of developed seeds with glmmTMB package
-summary(Delph.prop.treat.glmmtmb) #model summary
+#Delph.prop.treat.glmmtmb<-glmmTMB(cbind(dev.seed.total,undev.seed.total) ~ treat/X.flowers + (1|site/plot.treat), family = binomial, data = delph) #modeling pollen lim and proportion of developed seeds with glmmTMB package
+#summary(Delph.prop.treat.glmmtmb) #model summary
 
-delph.prop.treat.simulation<-simulateResiduals(fittedModel = Delph.prop.treat.glmmtmb) #creating simulation for Delphinium model
-plot(delph.prop.treat.simulation) #plotting simulation
-testDispersion(delph.prop.treat.simulation) #checking for overdispersion
-testZeroInflation(delph.prop.treat.simulation) #checking for zero inflation
+#delph.prop.treat.simulation<-simulateResiduals(fittedModel = Delph.prop.treat.glmmtmb) #creating simulation for Delphinium model
+#plot(delph.prop.treat.simulation) #plotting simulation
+#testDispersion(delph.prop.treat.simulation) #checking for overdispersion
+#testZeroInflation(delph.prop.treat.simulation) #checking for zero inflation
 ```
 
 Delphinium proportions of developed seeds were significantly affected by pollen supplementation. The pollen limitation model for Delphinium proportion data is zero-inflated. As with the model above, we changed the family to beta binomial and included the zero-inflation formula.
