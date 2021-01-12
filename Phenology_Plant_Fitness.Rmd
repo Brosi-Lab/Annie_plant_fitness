@@ -286,7 +286,7 @@ The Mertensia seed data fits a negative binomial distribution. The glmmTMB packa
 We did not detect an effect of relative blooming time, conspecific density, or plot treatment on the total number of seeds in Mertensia individuals. We then checked for overdispersion and zero-inflation in the data using the DHARMa package. The overdispersion and zero-inflation tests work with the glmmTMB package. The Mertensia count data is not overdispersed, but it is slightly zero-inflated. To address this, we adjusted our glmmtmb model to include zero-inflation.
 
 ```{r correcting mert counts glmmtmb}
-mert.glmmtmb<-glmmTMB(dev.seed ~ flowers:deviation*early.late + number.conspecifics/plot.treat + rate + (1|site), ziformula=~1, family = "nbinom2", data = mert.open) #putting count data into glmmTMB for DHARMa package
+mert.glmmtmb<-glmmTMB(dev.seed ~ flowers:(deviation*early.late) + flowers:number.conspecifics/plot.treat + rate:flowers + (1|site), ziformula=~1, family = "nbinom2", data = mert.open) #putting count data into glmmTMB for DHARMa package
 summary(mert.glmmtmb) #summary of glmmTMB model
 
 mert.counts.simulation<-simulateResiduals(fittedModel = mert.glmmtmb) #creating simulation for Mertensia mixed effects model with DHARMa package
