@@ -66,6 +66,7 @@ mert = read.csv("Mertensia_final2.csv") # read in Mertensia data
 mert$prop.dev.seeds<-(mert$dev.seed/mert$total.seeds) #adding proportion of developed seeds
 mert$deviation<-abs(mert$relative.position) #getting deviation from the peak
 mert$early.late<-factor(NA, levels = c("early","late")) #creating early/late variables based on relative position
+mert$seeds.per.flower<-(mert$dev.seed/mert$flowers)
 mert$early.late[mert$relative.position<0]<-"early"
 mert$early.late[mert$relative.position>0]<-"late"
 mert<-mert[!is.na(mert$dev.seed),]
@@ -84,6 +85,7 @@ delph$deviation<-abs(delph$relative.position) #getting deviation from the peak
 delph$early.late<-factor(NA, levels = c("early","late")) #creating early/late variables based on relative position
 delph$early.late[delph$relative.position<0]<-"early"
 delph$early.late[delph$relative.position>0]<-"late"
+delph$seeds.per.flower<-((delph$dev.seed1+delph$dev.seed)/delph$X.flowers)
 delph$undev.seed1[is.na(delph$undev.seed1)] <- 0 #converting NA to 0
 delph<-delph[!is.na(delph$total.seeds),]
 #delph<-delph[!is.na(delph$early.late),]
@@ -101,6 +103,7 @@ pot$deviation<-abs(pot$relative.position) #getting deviation from the peak
 pot$early.late<-factor(NA, levels = c("early","late")) #creating early/late variables based on relative position
 pot$early.late[pot$relative.position<0]<-"early"
 pot$early.late[pot$relative.position>0]<-"late"
+pot$seeds.per.flower<-((pot$dev.seed.sharp+pot$dev.seed.rest)/pot$X.flowers)
 pot$fl.count.sharp[is.na(pot$fl.count.sharp)] <- 0 #converting NA to 0
 pot<-pot[!is.na(pot$total.seeds),] #removing NA values in total seeds column
 #pot<-pot[!is.na(pot$early.late),] #removing NA values in early/late column
@@ -861,175 +864,49 @@ ggplot(delph, aes(x=as.Date.factor(delph$midpoint), y=delph$prop.dev.seeds, grou
   scale_x_date(date_breaks = "3 days", date_labels = "%m/%d")
 ```
 
-# Mixed Effects Models with Seed Weights
-
-In addition to counting the number of developed seeds and undeveloped seeds, we weighed the developed seeds for individuals of our three focal species. Seed weights were measured in grams. Several individuals did not produce any developed seeds, and we recorded these weights as zero. 
+# Mixed Effects Models with Seeds per Flower
 
 ## Mertensia
 
-First, we had to convert the weights from grams to mg and eliminate the zeros by changing all zeros to 0.0001. 
+```{r main hurdle model with lme4, warning=FALSE}
+mert.open$non_zero <- ifelse(mert.open$seeds.per.flower > 0, 1, 0) # creating zero/non-zero column
 
-```{r changing mert seed weights to mg, message=FALSE, warning=FALSE}
-mert.open$seed.weight<-mert.open$seed.weight*1000 #converting seed weights to mg
-mert.open<-mert.open[!(mert.open$seed.weight=="0"),] #removing individuals without developed seed weight
-mert.open$mean.weight<-mert.open$seed.weight/mert.open$dev.seed #finding mean weight
+mert.hurdle<-glmer(non_zero ~ early.late*deviation + number.conspecifics/plot.treat + rate + (1|site), data=mert.open,family = binomial) # model with new column
+
+mert.open.nonzero = subset(mert.open,non_zero==1)
+mert.gamma<-glmer(seeds.per.flower ~ early.late*deviation + number.conspecifics/plot.treat + rate + (1|site), family=Gamma, data = mert.open.nonzero, na.action = "na.fail") # model without zeros
+
+summary(mert.hurdle) # viewing model results
+summary(mert.gamma)
 ```
-
-We then checked the distribution. Because weight is a continuous variable, the data fit a gaussian distribution.
-
-```{r checking mert weight seed distribution, message=FALSE, warning=FALSE}
-mert.gaus<-fitdist(mert.open$mean.weight, "norm") #fitting Mertensia data to normal distribution using fitdistplus
-plot(mert.gaus) #plotting to see the fit
-```
-
-With normally distributed data, the best model to use is the lmer function from the lmerTest package. The lme4 package also has the lmer function, but it doesn't produce p-values in the results. The fixed and random effects are the same from the seed count and proportion models. 
-
-```{r Mertensia seed weight model, message=FALSE, warning=FALSE}
-mert.lmer<-lmer(mean.weight ~ deviation * early.late + plot.treat * number.conspecifics + rate + (1|site), data = mert.open) #Mertensia model with seed weights using the lmerTest package
-summary(mert.lmer)
-```
-We did not detect an effect of relative flowering time, conspecific density, or soil moisture on the seed weights for Mertensia individuals.
-
-```{r checking mert seed weights overdispersion, message=FALSE, warning=FALSE}
-mert.weights.simulation<-simulateResiduals(fittedModel = mert.lmer) #creating simulation for Mertenisa glmer model
-plot(mert.weights.simulation) #plotting simulation
-testDispersion(mert.weights.simulation) #checking for overdispersion
-testZeroInflation(mert.weights.simulation) #checking for zero inflation
-```
-
-The data are not overdispersed or zero-inflated.
-
-Next, we tested the effect of pollen limitation treatment. We again used the lmer function and the same fixed and random effects.
-
-```{r changing mert weights pollen treat, message=FALSE, warning=FALSE}
-mert$seed.weight<-mert$seed.weight*1000 #converting seed weights to mg
-mert<-mert[!(mert$seed.weight=="0"),] #removing individuals without developed seed weight
-mert$mean.weight<-mert$seed.weight/mert$dev.seed #finding mean weight
-```
-
-```{r mert pollen lim seed weights, message=FALSE, warning=FALSE}
-mert.treat.lmer<-lmer(mean.weight ~ treat + (1|site/plot.treat), data = mert) #Mertensia model for seed weight data and pollen lim treatment with lme4 package
-summary(mert.treat.lmer) #summary of model output
-```
-We did not detect an effect of pollen supplementation on the seed weights of Mertensia individuals. We checked for overdispersion and zero-inflation again.
-
-```{r checking mert seed weights pol lim overdispersion, message=FALSE, warning=FALSE}
-mert.treat.weights.simulation<-simulateResiduals(fittedModel = mert.treat.lmer) #creating simulation for Mertenisa glmer model
-plot(mert.treat.weights.simulation) #plotting simulation
-testDispersion(mert.treat.weights.simulation) #checking for overdispersion
-testZeroInflation(mert.treat.weights.simulation) #checking for zero inflation
-```
-The data are not overdispersed or zero-inflated.
 
 ## Delphinium
 
-```{r changing delph seed weights to mg, message=FALSE, warning=FALSE}
-delph.open$seed.weight<-delph.open$weight1 + delph.open$weight.rest #combining weight of first flower seeds and the rest of the seeds
-delph.open$seed.weight<-delph.open$seed.weight*1000 #converting seed weights to mg
-delph.open<-delph.open[!(delph.open$seed.weight=="0"),] #removing individuals without developed seed weight
-delph.open$mean.weight<-delph.open$seed.weight/delph.open$total.seeds #finding mean weight
-delph.open<-delph.open[-14,] #removing an outlier
+```{r delph hurdle model with lme4, warning=FALSE}
+delph.open$non_zero <- ifelse(delph.open$seeds.per.flower > 0, 1, 0) # creating zero/non-zero column
+
+delph.hurdle<-glmer(non_zero ~ early.late*deviation + number.conspecifics/plot.treat + rate + (1|site), data=delph.open,family = binomial) # model with new column
+
+delph.open.nonzero = subset(delph.open,non_zero==1)
+delph.gamma<-glmer(seeds.per.flower ~ early.late*deviation + number.conspecifics/plot.treat + rate + (1|site), family=Gamma, data = delph.open.nonzero) # model without zeros
+
+summary(delph.hurdle) # viewing model results
+summary(delph.gamma)
 ```
-
-We checked the distribution. Because weight is a continuous variable, the data fit a gaussian distribution.
-
-```{r checking delph weight seed distribution, message=FALSE, warning=FALSE}
-delph.gaus<-fitdist(delph.open$mean.weight, "norm") #fitting Mertensia data to normal distribution using fitdistplus
-plot(delph.gaus) #plotting to see the fit
-```
-
-Below is the model using seed weight for Delphinium individuals. The fixed and random effects are the same as the previous Delphinium models. We again used the lmerTest package.
-
-```{r delph seed weight model, message=FALSE, warning=FALSE}
-delph.lmer<-lmer(mean.weight ~ deviation * early.late + plot.treat * number.conspecifics + rate + (1|site), data = delph.open) #Delphinium model with seed weights using the lmerTest package
-summary(delph.lmer)
-```
-We did not detect an effect of relative blooming time, conspecific density, or soil moisture on the seed weights of Delphinium individuals.
-
-```{r checking delph seed weights overdispersion, message=FALSE, warning=FALSE}
-delph.weights.simulation<-simulateResiduals(fittedModel = delph.lmer) #creating simulation for Delphinium glmer model
-plot(delph.weights.simulation) #plotting simulation
-testDispersion(delph.weights.simulation) #checking for overdispersion
-testZeroInflation(delph.weights.simulation) #checking for zero inflation
-```
-The data are not overdispersed or zero-inflated. 
-
-Next, we again tested for the effect of pollen limitation treatment on seed weight.
-
-```{r changing delph weights pollen treat, message=FALSE, warning=FALSE}
-delph$seed.weight<-delph$weight1 + delph$weight.rest #combining weight of first flower seeds and the rest of the seeds
-delph$seed.weight<-delph$seed.weight*1000
-delph<-delph[!(delph$seed.weight=="0"),] #removing individuals without developed seed weight
-delph$mean.weight<-delph$seed.weight/delph$total.seeds #finding mean weight
-```
-
-```{r delph pollen lim seed weights, message=FALSE, warning=FALSE}
-delph.treat.lmer<-lmer(mean.weight ~ treat + (1|site/plot.treat), data = delph) #Delphinium model for seed weight data and pollen lim treatment with lme4 package
-summary(delph.treat.lmer) #summary of model output
-```
-We did not detect an effect of pollen supplementation on the seed weights of Delphinium individuals. We checked for overdispersion and zero-inflation again.
-
-```{r checking delph seed weights pol lim overdispersion, message=FALSE, warning=FALSE}
-delph.treat.weights.simulation<-simulateResiduals(fittedModel = delph.treat.lmer) #creating simulation for Delphinium glmer model
-plot(delph.treat.weights.simulation) #plotting simulation
-testDispersion(delph.treat.weights.simulation) #checking for overdispersion
-testZeroInflation(delph.treat.weights.simulation) #checking for zero inflation
-```
-The data are not overdispersed or zero-inflated.
 
 ## Potentilla
 
-```{r changing pot seed weights to mg, message=FALSE, warning=FALSE}
-pot.open$total.seed.weight<-pot.open$total.seed.weight*1000 #converting seed weights to mg
-pot.open<-pot.open[!(pot.open$total.seed.weight=="0"),] #removing individuals without developed seed weight
-pot.open$mean.weight<-pot.open$total.seed.weight/pot.open$total.seeds #finding mean weight
+```{r pot hurdle model with lme4, warning=FALSE}
+pot.open$non_zero <- ifelse(pot.open$seeds.per.flower > 0, 1, 0) # creating zero/non-zero column
+
+pot.hurdle<-glmer(non_zero ~ early.late*deviation + number.conspecifics/plot.treat + rate + (1|site), data=pot.open,family = binomial) # model with new column
+
+pot.open.nonzero = subset(pot.open,non_zero==1)
+pot.gamma<-glmer(seeds.per.flower ~ early.late*deviation + number.conspecifics/plot.treat + rate + (1|site), family=Gamma, data = pot.open.nonzero) # model without zeros
+
+summary(pot.hurdle) # viewing model results
+summary(pot.gamma)
 ```
-
-We then checked the distribution. Because weight is a continuous variable, the data fit a gaussian distribution.
-
-```{r checking pot weight seed distribution, message=FALSE, warning=FALSE}
-pot.gaus<-fitdist(pot.open$mean.weight, "norm") #fitting Potentilla data to normal distribution using fitdistplus
-plot(pot.gaus) #plotting to see the fit
-```
-
-Below is the model for the seed weights of Potentilla individuals. The fixed and random effects are the same from the seed count and proportion models. 
-
-```{r Pot seed weight model, message=FALSE, warning=FALSE}
-pot.lmer<-lmer(mean.weight ~ deviation * early.late + plot.treat * number.conspecifics + rate + (1|site), data = pot.open) #Potentilla model with seed weights using the lmerTest package
-summary(pot.lmer)
-```
-We did not detect an effect of relative flowering time, conspecific density, or soil moisture on the seed weights for Potentilla individuals.
-
-```{r checking pot seed weights overdispersion, message=FALSE, warning=FALSE}
-pot.weights.simulation<-simulateResiduals(fittedModel = pot.lmer) #creating simulation for Potentilla glmer model
-plot(pot.weights.simulation) #plotting simulation
-testDispersion(pot.weights.simulation) #checking for overdispersion
-testZeroInflation(pot.weights.simulation) #checking for zero inflation
-```
-The data are not overdispersed or zero-inflated.
-
-Next, we tested the effect of pollen limitation treatment. We again used the lmer function and the same fixed and random effects.
-
-```{r pot weights pollen treat, message=FALSE, warning=FALSE}
-pot$total.seed.weight<-pot$total.seed.weight*1000 #converting seed weights to mg
-pot<-pot[!(pot$total.seed.weight=="0"),] #removing individuals without developed seed weight
-pot$mean.weight<-pot$total.seed.weight/pot$total.seeds #finding mean weight
-```
-
-```{r pot pollen lim seed weights, message=FALSE, warning=FALSE}
-pot.treat.lmer<-lmer(mean.weight ~ treat + (1|site/plot.treat), data = pot) #Potentilla model for seed weight data and pollen lim treatment with lme4 package
-summary(pot.treat.lmer) #summary of model output
-```
-Pollen-supplemented Potentilla individuals had lower seed weight than open individuals. We checked for overdispersion and zero-inflation again.
-
-```{r checking pot seed weights pol lim overdispersion, message=FALSE, warning=FALSE}
-pot.treat.weights.simulation<-simulateResiduals(fittedModel = pot.treat.lmer) #creating simulation for Potentilla glmer model
-plot(pot.treat.weights.simulation) #plotting simulation
-testDispersion(pot.treat.weights.simulation) #checking for overdispersion
-testZeroInflation(pot.treat.weights.simulation) #checking for zero inflation
-```
-The data are not overdispersed or zero-inflated.
-
 
 # Session Info
 
