@@ -220,8 +220,8 @@ all.seeds<-rbind(condensed.mert,condensed.delph,condensed.pot) #combining all of
 all.seed.nbinom<-fitdist(all.seeds$total.seeds, "nbinom") #fitting Mertensia data to negative binomial distribution using fitdistplus
 plot(all.seed.nbinom) #plotting to see the fit
 
-all.seeds.exp<-fitdist(all.seeds$seeds.per.flower,"exp") #checking exponential distribution
-plot(all.seeds.exp) #plotting exponential distribution
+#all.seeds.exp<-fitdist(all.seeds$seeds.per.flower,"exp") #checking exponential distribution
+#plot(all.seeds.exp) #plotting exponential distribution
 ```
 
 Because the total seeds fit a negative binomial distribution, we used the glmmTMB package. Because the seeds per flower variable fit a exponential distribution, we used the lme4 package. The seeds per flower variable requires the Gamma family, which means we had to create a hurdle model to avoid the zeros in our data. Hurdle models involve a first binomial model with zeros and non-zeros as the response variable, and a second Gamma model with seeds per flower as the response variable. The first model shows us if the soil moisture impacts the ability for species to produce seeds (success/failure).
