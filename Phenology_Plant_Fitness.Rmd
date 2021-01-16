@@ -899,6 +899,8 @@ summary(delph.gamma)
 ```{r pot hurdle model with lme4, warning=FALSE}
 pot.open$non_zero <- ifelse(pot.open$seeds.per.flower > 0, 1, 0) # creating zero/non-zero column
 
+# had issues running these ones because so few open treatment individuals were 0 in the zero/non-zero breakdown, got error message and I'm still working on it
+
 pot.hurdle<-glmer(non_zero ~ early.late*deviation + number.conspecifics/plot.treat + rate + (1|site), data=pot.open,family = binomial) # model with new column
 
 pot.open.nonzero = subset(pot.open,non_zero==1)
