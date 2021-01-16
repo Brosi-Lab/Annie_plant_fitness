@@ -411,7 +411,7 @@ The Delphinium data fits a negative binomial distribution. We used the glmmTMB p
 ### Main Model
 
 ```{r Delphinium glmmTMB,warning=FALSE}
-delph.glmmtmb<-glmmTMB(total.seeds ~ X.flowers:deviation*early.late + number.conspecifics/plot.treat + rate + (1|site), family = "nbinom2", data = delph.open) #Delphinium model for negative binomial data with glmmTMB package
+delph.glmmtmb<-glmmTMB(total.seeds ~ X.flowers:(deviation*early.late) + X.flowers:number.conspecifics/plot.treat + (1|site), family = "nbinom2", data = delph.open) #Delphinium model for negative binomial data with glmmTMB package
 #removed treat fixed effect (only open)
 summary(delph.glmmtmb) #summary of model output
 
@@ -530,7 +530,7 @@ The Potentilla seed data fits a negative binomial distribution. We used the glmm
 ### Main Model
 
 ```{r Potentilla glmmtmb,warning=FALSE}
-#pot.glmmtmb<-glmmTMB(total.seeds ~ X.flowers:deviation * early.late + number.conspecifics/plot.treat + rate + (1|site), family = "nbinom2", data = pot.open) #Potentilla model for negative binomial data with glmmTMB package
+#pot.glmmtmb<-glmmTMB(total.seeds ~ X.flowers:(deviation * early.late) + X.flowers:number.conspecifics/plot.treat + (1|site), family = "nbinom2", data = pot.open) #Potentilla model for negative binomial data with glmmTMB package
 #summary(pot.glmmtmb) #summary of model output
 
 #pot.counts.simulation<-simulateResiduals(fittedModel = pot.glmmtmb) #creating simulation for Potentilla mixed effects model with DHARMa package
@@ -541,7 +541,7 @@ The Potentilla seed data fits a negative binomial distribution. We used the glmm
 We detected a marginally significant effect of soil moisture rate on the total developed seeds of Potentilla individuals. The Potentilla data are not overdispersed, but they are zero-inflated. To fix this, we had to include zero inflation in our model and again check for zero-inflation.
 
 ```{r Potentilla new glmmtmb,warning=FALSE}
-pot.glmmtmb<-glmmTMB(total.seeds ~ X.flowers:deviation * early.late + number.conspecifics/plot.treat + rate + (1|site), ziformula=~1, family = "nbinom2", data = pot.open) #new Potentilla model for negative binomial data with glmmTMB package
+pot.glmmtmb<-glmmTMB(total.seeds ~ X.flowers:(deviation * early.late) + X.flowers:number.conspecifics/plot.treat + (1|site), ziformula=~1, family = "nbinom2", data = pot.open) #new Potentilla model for negative binomial data with glmmTMB package
 summary(pot.glmmtmb) #summary of model output
 
 pot.counts.simulation<-simulateResiduals(fittedModel = pot.glmmtmb) #creating simulation for Potentilla mixed effects model with DHARMa package
@@ -642,7 +642,7 @@ ggplot(pot,aes(x=as.Date.factor(pot$midpoint), y=pot$total.seeds, group= pot$tre
   scale_x_date(date_breaks = "3 days", date_labels = "%m/%d")
 ```
 
-# Mixed Effects Model with Proportion Data
+# Mixed Effects Models with Proportion Data
 
 Only the Mertensia and Delphinium data included proportion of developed seeds to total seeds. When counting seeds for the Potentilla individuals, undeveloped seeds were difficult to distinguish from other elements of the carpel and were not included. Because the data are proportions and we are using the cbind function, we assume a binomial distribution. 
 
