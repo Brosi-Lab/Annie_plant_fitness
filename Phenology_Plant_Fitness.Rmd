@@ -205,7 +205,7 @@ We are including all of the individuals of the three species and using species a
 
 First, we combined the variables for the three species in order to run the model selection with all of the collected seeds. We checked the distribution of the total number of developed seeds and found that they fit a negative binomial distribution. Next we checked the distribution for seeds per flower and found that they fit an exponential distribution.
 
-```{r combining all of the seed data}
+```{r combining all of the seed data, warning=FALSE, message=FALSE}
 condensed.mert<-mert[,c(-4,-20,-21,-23,-24,-30)] #removing unnecessary columns
 condensed.delph<-delph[,c(-4,-20:-28,-30,-36)]
 condensed.pot<-pot[,c(-4,-20:-28,-30,-33:-37)]
@@ -226,12 +226,12 @@ plot(all.seed.nbinom) #plotting to see the fit
 
 Because the total seeds fit a negative binomial distribution, we used the glmmTMB package. Because the seeds per flower variable fit a exponential distribution, we used the lme4 package. The seeds per flower variable requires the Gamma family, which means we had to create a hurdle model to avoid the zeros in our data. Hurdle models involve a first binomial model with zeros and non-zeros as the response variable, and a second Gamma model with seeds per flower as the response variable. The first model shows us if the soil moisture impacts the ability for species to produce seeds (success/failure).
 
-```{r soil model with glmmtmb, warning=FALSE}
+```{r soil model with glmmtmb, warning=FALSE, message=FALSE}
 soil.mod<-glmmTMB(total.seeds ~ mean + rate + effect.min + end + range + (1|site/plot.treat) + (1|species), family = "nbinom2", data = all.seeds) #model for soil moisture variables with all seeds
 summary(soil.mod)
 ```
 
-```{r hurdle model with lme4, warning=FALSE}
+```{r hurdle model with lme4, warning=FALSE, message=FALSE}
 all.seeds$non_zero <- ifelse(all.seeds$seeds.per.flower > 0, 1, 0) # creating zero/non-zero column
 
 soil.mod2.hurdle<-glmer(non_zero ~ mean + rate + effect.min + end + range + (1|site/plot.treat) + (1|species), data=all.seeds,family = binomial) # model with new column
@@ -246,7 +246,7 @@ In our soil moisture hurdle model, the soil moisture variables did not affect th
 
 We ran two models selections: one for the glmmTMB model with the count data and one for the glmer model with the seeds/flower data.
 
-```{r model selection with dredge, message=FALSE}
+```{r model selection with dredge, message=FALSE, warning=FALSE}
 dredge_result<-dredge(soil.mod) #using dredge function for model selection
 subset(dredge_result, delta<4)
 
@@ -265,7 +265,7 @@ The response variable is total seeds, which is discrete and non-zero. The intera
 
 We started by limiting the individuals to the open treatment (excluding the hand-pollinated treatment) and by checking the distribution of the total seed counts.
 
-```{r limiting Mertensia to open}
+```{r limiting Mertensia to open, warning=FALSE, message=FALSE}
 mert.open<-mert[(mert$treat=="open"),] #removed hand pollination treatment
 
 mert.nbinom<-fitdist(mert.open$dev.seed, "nbinom") #fitting Mertensia data to negative binomial distribution using fitdistplus
@@ -286,9 +286,9 @@ The Mertensia seed data fits a negative binomial distribution. The glmmTMB packa
 #testZeroInflation(mert.counts.simulation) #checking for zero inflation
 ```
 
-We did not detect an effect of relative blooming time, conspecific density, or plot treatment on the total number of seeds in Mertensia individuals. We then checked for overdispersion and zero-inflation in the data using the DHARMa package. The overdispersion and zero-inflation tests work with the glmmTMB package. The Mertensia count data is not overdispersed, but it is slightly zero-inflated. To address this, we adjusted our glmmtmb model to include zero-inflation.
+We detected a significant effect of early vs. late blooming on the total number of seeds in Mertensia individuals, but when we checked for overdispersion and zero-inflation in the data using the DHARMa package, the data were slightly zero-inflated. To address this, we adjusted our glmmtmb model to include zero-inflation.
 
-```{r correcting mert counts glmmtmb}
+```{r correcting mert counts glmmtmb, warning=FALSE, message=FALSE}
 mert.glmmtmb<-glmmTMB(dev.seed ~ flowers:(deviation*early.late) + flowers:number.conspecifics/plot.treat  + (1|site), ziformula=~1, family = "nbinom2", data = mert.open) #putting count data into glmmTMB for DHARMa package
 summary(mert.glmmtmb) #summary of glmmTMB model
 
@@ -297,9 +297,9 @@ plot(mert.counts.simulation) #plotting simulation
 testDispersion(mert.counts.simulation) #checking for overdispersion
 testZeroInflation(mert.counts.simulation) #checking for zero inflation
 ```
-When number of flowers is taken into account, seed set for Mertensia individuals were affected by deviation from the population peak. Zero-inflation is accounted for in the new model, and the model for Mertensia count data is no longer zero-inflated. 
+When number of flowers is taken into account, seed set for Mertensia individuals may be affected by blooming before or after the population peak. Zero-inflation is accounted for in the new model, and the model for Mertensia count data is no longer zero-inflated. 
 
-To figure out the direction of the effect, we looked at the plots (shown below). **Deviation from the population peak has a positive effect on seed set. As deviation increases, seed set increases.**
+To figure out the direction of the effect, we looked at the plots (shown below). **Blooming after the population peak may increase seed set for Mertensia individuals.**
 
 ### Pollen Limitation Model
 
@@ -315,9 +315,9 @@ To test the pollen limitation individuals, we created a separate fixed effects m
 #testZeroInflation(mert.counts.treat.simulation) #checking for zero inflation
 ```
 
-We detected an effect of pollen limitation treatment on Mertensia total developed seeds, but we had to test the model assumptions of our pollen limitation model as well. After converting our model to an glmmTMB model, we tested for overdispersion and zero-inflation with the DHARMa package. The data in the pollen limitation model for Mertensia are not overdispersed, but they are zero-inflated. We then adjusted our model to include zero-inflation and ran the overdispersion and zero-inflation tests again.
+We detected an effect of pollen limitation treatment on Mertensia total developed seeds, but we had to test the model assumptions of our pollen limitation model as well. The data in the pollen limitation model for Mertensia are not overdispersed, but they are zero-inflated. We then adjusted our model to include zero-inflation and ran the overdispersion and zero-inflation tests again.
 
-```{r Mert new glmmtmb pollen treat, warning=FALSE}
+```{r Mert new glmmtmb pollen treat, warning=FALSE, message=FALSE}
 mert.treat.glmmtmb<-glmmTMB(dev.seed ~ treat/flowers + (1|site/plot.treat), ziformula=~1, family = "nbinom2", data = mert) #Mertensia model for negative binomial data with glmmTMB package
 summary(mert.treat.glmmtmb) #summary of model output
 
@@ -353,7 +353,7 @@ ggplot(mert.open, aes(x=mert.open$relative.position, y=mert.open$dev.seed, group
 
 We then plotted the interaction between deviation and early/late instead of relative position in order to fit a linear model.
 
-```{r Mertensia plot substituting relative position, message=FALSE}
+```{r Mertensia plot substituting relative position, warning=FALSE, message=FALSE}
 ggplot(mert.open, aes(x=mert.open$deviation, y=mert.open$dev.seed/mert.open$flowers, group= mert.open$early.late)) +
   labs(y="Total Developed Seeds per Flower",x="Days Relative to Population Peak Bloom", title="Effect of Mertensia Deviation from Peak on Total Developed Seeds") + theme_classic() +
   theme_classic() +
@@ -366,7 +366,7 @@ ggplot(mert.open, aes(x=mert.open$deviation, y=mert.open$dev.seed/mert.open$flow
 
 Then we plotted the effect of conspecific density and plot treatment on total developed seeds.
 
-```{r Mertensia plot with conspecific density, message=FALSE}
+```{r Mertensia plot with conspecific density, warning=FALSE, message=FALSE}
 ggplot(mert.open, aes(x=mert.open$number.conspecifics, y=mert.open$dev.seed, group= mert.open$plot.treat)) +
   labs(y="Total Developed Seeds",x="Conspecific Density", title="Effect of Mertensia Conspecific Density on Total Developed Seeds") +
   theme_classic() +
@@ -379,7 +379,7 @@ ggplot(mert.open, aes(x=mert.open$number.conspecifics, y=mert.open$dev.seed, gro
 
 Finally, we plotted all of the data with the pollinator active period. The pollinator active period was the time during which we saw interactions between pollinators and our species. The active period is shaded.
 
-```{r Mertensia poll act plot, message=FALSE}
+```{r Mertensia poll act plot, warning=FALSE, message=FALSE}
 mert$midpoint2<-format(as.Date(mert$midpoint), format="%m-%d")
 
 ggplot(mert, aes(x=mert$midpoint2, y=mert$dev.seed, group= mert$treat)) +
@@ -399,7 +399,7 @@ ggplot(mert, aes(x=mert$midpoint2, y=mert$dev.seed, group= mert$treat)) +
 
 For Delphinium, we again limited the individuals to open treatment individuals.
 
-```{r limiting Delphinium to open}
+```{r limiting Delphinium to open, warning=FALSE,message=FALSE}
 delph.open<-delph[(delph$treat=="open"),] #removed hand pollination treatment
 
 delph.nbinom<-fitdist(delph.open$total.seeds, "nbinom") #fitting negative binomial distribution using fitdistplus package
@@ -410,7 +410,7 @@ The Delphinium data fits a negative binomial distribution. We used the glmmTMB p
 
 ### Main Model
 
-```{r Delphinium glmmTMB,warning=FALSE}
+```{r Delphinium glmmTMB,warning=FALSE,message=FALSE}
 delph.glmmtmb<-glmmTMB(total.seeds ~ X.flowers:(deviation*early.late) + X.flowers:number.conspecifics/plot.treat + (1|site), family = "nbinom2", data = delph.open) #Delphinium model for negative binomial data with glmmTMB package
 #removed treat fixed effect (only open)
 summary(delph.glmmtmb) #summary of model output
@@ -421,7 +421,7 @@ testDispersion(delph.counts.simulation) #checking for overdispersion
 testZeroInflation(delph.counts.simulation) #checking for zero inflation
 ```
 
-Soil moisture rate had an effect on Delphinium individual seed set. Additionally, when flower number is taken into account, deviation from the population peak has a marginally significant effect on Delphinium number of developed seeds. We tested the model assumptions as we did with Mertensia seed count data. We checked for overdispersion and zero-inflation. The model for the Delphinium count data is not overdispersed or zero-inflated.
+When flower number is taken into account, deviation from the population peak has a significant effect on Delphinium developed seed count. We tested the model assumptions as we did with Mertensia seed count data. The model for the Delphinium count data is not overdispersed or zero-inflated.
 
 To determine the direction of deviation effect, we looked at the plot. **When flower number is taken into account, seed set of Delphinium individuals increase with deviation from the population peak.**
 
@@ -440,7 +440,7 @@ Again, we tested the pollen limitation in a separate mixed effects model.
 ```
 We detected an effect of pollen limitation on the total developed seeds of Delphinium individuals. We again checked for overdispersion and zero-inflation in the pollen limitation data. The Delphinum pollen limitation model is overdispersed and zero-inflated. We adjusted our model to include the zero-inflation formula, and re-tested for overdispersion and zero-inflation.
 
-```{r Delph new glmmtmb pollen treat,warning=FALSE}
+```{r Delph new glmmtmb pollen treat,warning=FALSE,message=FALSE}
 delph.treat.glmmtmb<-glmmTMB(total.seeds ~ treat/X.flowers + (1|site/plot.treat), ziformula=~1, family = "nbinom2", data = delph) #Mertensia model for negative binomial data with glmmTMB package
 summary(delph.treat.glmmtmb) #summary of model output
 
@@ -475,7 +475,7 @@ ggplot(delph.open, aes(x=delph.open$relative.position, y=delph.open$total.seeds,
   geom_smooth(method = "glm", aes(color=early.late))
 ```
 
-```{r delphinium plot substituting relative position,message=FALSE}
+```{r delphinium plot substituting relative position,warning=FALSE, message=FALSE}
 ggplot(delph.open, aes(x=delph.open$deviation, y=(delph.open$total.seeds/delph.open$X.flowers), group= delph.open$early.late)) +
   labs(y="Total Developed Seeds per Flower",x="Days Relative to Population Peak Bloom", title="Effect of Delphinium Deviation from Peak on Total Developed Seeds") +
   theme_classic() +
@@ -487,7 +487,7 @@ ggplot(delph.open, aes(x=delph.open$deviation, y=(delph.open$total.seeds/delph.o
 ```
 
 
-```{r Delphinium plot with conspecific density,message=FALSE}
+```{r Delphinium plot with conspecific density,warning=FALSE, message=FALSE}
 ggplot(delph.open, aes(x=delph.open$number.conspecifics, y=delph.open$total.seeds, group= delph.open$plot.treat)) +
   labs(y="Total Developed Seeds",x="Conspecific Density", title="Effect of Delphinium Conspecific Density on Total Developed Seeds") +
   theme_classic() +
@@ -500,7 +500,7 @@ ggplot(delph.open, aes(x=delph.open$number.conspecifics, y=delph.open$total.seed
 
 Finally, we plotted the pollinator active period with the total number of developed seeds and midpoint of individuals.
 
-```{r delph poll act plot, message=FALSE}
+```{r delph poll act plot, warning=FALSE, message=FALSE}
 delph$midpoint2<-format(as.Date(delph$midpoint), format="%m-%d")
 
 ggplot(delph, aes(x=delph$midpoint2, y=delph$total.seeds, group= delph$treat)) +
@@ -519,7 +519,7 @@ ggplot(delph, aes(x=delph$midpoint2, y=delph$total.seeds, group= delph$treat)) +
 
 We began by limiting the data to the open treatment Potentilla individuals.
 
-```{r limiting Potentilla to open}
+```{r limiting Potentilla to open, warning=FALSE,message=FALSE}
 pot.open<-pot[(pot$treat=="open"),] #removed hand pollination treatment
 
 pot.nbinom<-fitdist(pot.open$total.seeds, "nbinom") #fitting negative binomial distribution using fitdistplus package
@@ -538,9 +538,9 @@ The Potentilla seed data fits a negative binomial distribution. We used the glmm
 #testDispersion(pot.counts.simulation) #checking for overdispersion
 #testZeroInflation(pot.counts.simulation) #checking for zero inflation
 ```
-We detected a marginally significant effect of soil moisture rate on the total developed seeds of Potentilla individuals. The Potentilla data are not overdispersed, but they are zero-inflated. To fix this, we had to include zero inflation in our model and again check for zero-inflation.
+The Potentilla data are not overdispersed, but they are zero-inflated. To fix this, we had to include zero inflation in our model and again check for zero-inflation.
 
-```{r Potentilla new glmmtmb,warning=FALSE}
+```{r Potentilla new glmmtmb,warning=FALSE, message=FALSE}
 pot.glmmtmb<-glmmTMB(total.seeds ~ X.flowers:(deviation * early.late) + X.flowers:number.conspecifics/plot.treat + (1|site), ziformula=~1, family = "nbinom2", data = pot.open) #new Potentilla model for negative binomial data with glmmTMB package
 summary(pot.glmmtmb) #summary of model output
 
@@ -549,7 +549,7 @@ plot(pot.counts.simulation) #plotting simulation
 testDispersion(pot.counts.simulation) #checking for overdispersion
 testZeroInflation(pot.counts.simulation) #checking for zero inflation
 ```
-When we incorporated zero-inflation into the model, we found a marginally significant trend in the soil moisture variable. As the rate of change in soil moisture increases, the number of developed seeds in Potentilla individuals decreases. Additionally, we detected an effect between deviation, early/late, and number of flowers. The direction of the effect, however, must be determined from the plots (below).
+When we incorporated zero-inflation into the model, we found a significant effect of deviation from the population peak, blooming before vs after the peak, and the interaction between the two. The direction of the effect, however, must be determined from the plots (below).
 
 After looking at the plots, we see that **when we account for the number of flowers, deviation has a greater negative effect on the late blooming Potentilla individuals.**
 
@@ -567,9 +567,9 @@ Below is the mixed effects model for the pollen limitation treatments.
 #testZeroInflation(pot.counts.treat.simulation) #checking for zero inflation
 ```
 
-We detected a marginally significant effect of the pollen limitation treatment on the total number of developed seeds for Potentilla individuals. The Potentilla pollen limitation data were overdispersed and zero-inflated. We addressed the zero-inflation issue by again including the zero-inflation formula into our models. 
+We detected a significant effect of the pollen limitation treatment on the total number of developed seeds for Potentilla individuals, but the Potentilla pollen limitation data were overdispersed and zero-inflated. We addressed the zero-inflation issue by again including the zero-inflation formula into our models. 
 
-```{r Pot new glmmtmb pollen treat,warning=FALSE}
+```{r Pot new glmmtmb pollen treat,warning=FALSE,message=FALSE}
 pot.treat.glmmtmb<-glmmTMB(total.seeds ~ treat/X.flowers + (1|site/plot.treat), ziformula=~1, family="nbinom2",data = pot) #Potentilla model for negative binomial data with glmmadmb package
 summary(pot.treat.glmmtmb) #summary of model output
 
@@ -604,7 +604,7 @@ ggplot(pot.open, aes(x=pot.open$relative.position, y=pot.open$total.seeds, group
   geom_smooth(method = "glm", aes(color=early.late))
 ```
 
-```{r potentilla plot substituting relative position,message=FALSE}
+```{r potentilla plot substituting relative position,warning=FALSE, message=FALSE}
 ggplot(pot.open, aes(x=pot.open$deviation, y=pot.open$total.seeds/pot.open$X.flowers, group= pot.open$early.late)) +
   labs(y="Total Developed Seeds per Flower",x="Days Relative to Population Peak Bloom",title="Effect of Potentilla Deviation from Peak on Total Developed Seeds") +
   theme_classic() +
@@ -615,7 +615,7 @@ ggplot(pot.open, aes(x=pot.open$deviation, y=pot.open$total.seeds/pot.open$X.flo
   scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange"))
 ```
 
-```{r Potentilla plot with conspecific density,message=FALSE}
+```{r Potentilla plot with conspecific density,warning=FALSE, message=FALSE}
 ggplot(pot.open, aes(x=pot.open$number.conspecifics, y=pot.open$total.seeds, group= pot.open$plot.treat)) +
   labs(y="Total Developed Seeds",x="Conspecific Density", title="Effect of Potentilla Conspecific Density on Total Developed Seeds") +
   theme_classic() +
@@ -628,7 +628,7 @@ ggplot(pot.open, aes(x=pot.open$number.conspecifics, y=pot.open$total.seeds, gro
 
 Again we plotted the pollinator activity period.
 
-```{r pot poll act plot, message=FALSE}
+```{r pot poll act plot, warning=FALSE, message=FALSE}
 ggplot(pot,aes(x=as.Date.factor(pot$midpoint), y=pot$total.seeds, group= pot$treat)) +
   labs(y="Total Developed Seeds",x="Date", title="Pollinator Activity Period and Total Developed Seeds in Potentilla") +
   theme_classic() +
@@ -650,7 +650,7 @@ Only the Mertensia and Delphinium data included proportion of developed seeds to
 
 First, we had to calculate undeveloped seeds to use the cbind function for our proportion of developed seeds.
 
-```{r Mertensia undeveloped seeds}
+```{r Mertensia undeveloped seeds, warning=FALSE, message=FALSE}
 mert.open$undev.seeds<-(mert.open$total.seeds-mert.open$dev.seed) #creating an undeveloped seed column for cbind
 ```
 
@@ -658,8 +658,8 @@ mert.open$undev.seeds<-(mert.open$total.seeds-mert.open$dev.seed) #creating an u
 
 Below is the mixed effects model for the proportion of developed seeds. The individuals are still only limited to the open treatment. 
 
-```{r Mertensia proportion model,warning=FALSE}
-Mert.prop.glmmtmb<-glmmTMB(cbind(dev.seed,undev.seeds) ~ flowers:deviation * early.late + number.conspecifics/plot.treat + rate + (1|site), family = binomial, data = mert.open) #Mertensia model with proportion of developed seeds using the glmmTMB package
+```{r Mertensia proportion model,warning=FALSE,message=FALSE}
+Mert.prop.glmmtmb<-glmmTMB(cbind(dev.seed,undev.seeds) ~ flowers:(deviation * early.late) + flowers:number.conspecifics/plot.treat + (1|site), family = binomial, data = mert.open) #Mertensia model with proportion of developed seeds using the glmmTMB package
 summary(Mert.prop.glmmtmb)
 
 mert.prop.simulation<-simulateResiduals(fittedModel = Mert.prop.glmmtmb) #creating simulation for Mertensia mixed effects model with DHARMa package
@@ -668,15 +668,13 @@ testDispersion(mert.prop.simulation) #checking for overdispersion
 testZeroInflation(mert.prop.simulation)
 ```
 
-A significant effect was detected in the interaction between conspecifics and plot treatment, the rate of change in soil moisture, and the interaction between number of flowers, early/late, and deviation. As the number of conspecifics increased, the proportion of developed seeds in Mertensia individuals decreased, with a greater decline in the accelerated snowmelt plot. For the soil moisture variable, as the rate of change in soil moisture increased, the proportion of developed seeds decreased. Finally, when the number of flowers was taken into account, we detected an effect of deviation and early/late. The direction, however, had to be determined using the plots below. **When flower number was taken into account, deviation had a greater positive effect on late-blooming Potentilla individuals.**
-
-Once we had our model, we were able to check for overdispersion and zero inflaction. We checked for overdispersion and zero inflation with the DHARMa package.The Mertensia proportion data were not overdispersed or zero-inflated.
+We found a significant effect of deviation from the population peak on the proportion of developed seeds in Mertensia individuals. The Mertensia proportion data were also not overdispersed or zero-inflated. After looking at the plots below, we see that **when flower number was taken into account, Potentilla individuals that deviated from the population peak had higher seed set.**
 
 ### Pollen Limitation Model
 
 Next, we created the pollen limitation model for the Mertensia developed seeds. The model includes site and plot treatment as random effects like the models above. Now the proportion of developed seeds is the response variable.
 
-```{r Mert prop pollen treat,warning=FALSE}
+```{r Mert prop pollen treat,warning=FALSE, message=FALSE}
 mert$undev.seeds<-(mert$total.seeds-mert$dev.seed) #creating an undeveloped seed column for cbind
 
 Mert.prop.treat.glmmtmb<-glmmTMB(cbind(dev.seed,undev.seeds) ~ treat/flowers + (1|site/plot.treat), family = binomial, data = mert) #model with pollen lim treatment and proportion of developed seeds using the glmmTMB package
@@ -688,7 +686,7 @@ testDispersion(mert.prop.treat.simulation) #checking for overdispersion
 testZeroInflation(mert.prop.treat.simulation) #checking for zero inflation
 ```
 
-We did detected an marginally significant effect of pollen supplementation on the proportions of developed seeds for Mertensia individuals. We again checked to see if the data were overdispersed or zero-inflated, and they were not. **In conjunction with the developed seed counts above, it is clear that Mertensia individuals are pollen limited.**
+We did detected a significant effect of pollen supplementation on the proportions of developed seeds for Mertensia individuals, as well as a marginally significant interaction between flower number and pollination treatment. We again checked to see if the data were overdispersed or zero-inflated, and they were not. **In conjunction with the seed count results above, it is clear that Mertensia individuals are pollen limited.**
 
 ### Figures
 
@@ -705,7 +703,7 @@ ggplot(mert.open, aes(x=mert.open$relative.position, y=mert.open$prop.dev.seeds,
   geom_smooth()
 ```
 
-```{r Mertensia deviation proportion plot,message=FALSE}
+```{r Mertensia deviation proportion plot,warning=FALSE, message=FALSE}
 ggplot(mert.open, aes(x=mert.open$deviation, y=mert.open$prop.dev.seeds/mert.open$flowers, group= mert.open$early.late)) +
   labs(y="Proportion of Developed Seeds",x="Days Relative to Population Peak Bloom",title="Effect of Mertensia Deviation from Peak on Proportion of Developed Seeds") +
   theme_classic() +
@@ -718,7 +716,7 @@ ggplot(mert.open, aes(x=mert.open$deviation, y=mert.open$prop.dev.seeds/mert.ope
 
 Despite a marginally significant interaction effect, the effect of deviation on early vs. late individuals was not strong for Mertensia proportions of developed seeds.
 
-```{r mertensia plot conspecifics and proportions,message=FALSE}
+```{r mertensia plot conspecifics and proportions,warning=FALSE, message=FALSE}
 ggplot(mert.open, aes(x=mert.open$number.conspecifics, y=mert.open$prop.dev.seeds/mert.open$flowers, group= mert.open$plot.treat)) +
   labs(y="Proportion of Developed Seeds",x="Conspecific Density",title="Effect of Mertensia Conspecific Density on Proportion of Developed Seeds") +
   theme_classic() +
@@ -757,7 +755,7 @@ delph.open$undev.seed.total<-delph.open$undev.seed+delph.open$undev.seed1 #creat
 ### Main Model
 
 ```{r delphinium proportion model, warning=FALSE,message=FALSE}
-#Delph.prop.glmmtmb<-glmmTMB(cbind(dev.seed.total,undev.seed.total) ~ X.flowers:deviation * early.late + number.conspecifics/plot.treat + rate + (1|site), family = binomial, data = delph.open) #modeling Delphinium proportion of developed seeds with glmmTMB package
+#Delph.prop.glmmtmb<-glmmTMB(cbind(dev.seed.total,undev.seed.total) ~ X.flowers:(deviation * early.late) + X.flowers:number.conspecifics/plot.treat + (1|site), family = binomial, data = delph.open) #modeling Delphinium proportion of developed seeds with glmmTMB package
 #summary(Delph.prop.glmmtmb)
 
 #delph.prop.simulation<-simulateResiduals(fittedModel = Delph.prop.glmmtmb) #creating simulation for Delphinium model
@@ -766,10 +764,10 @@ delph.open$undev.seed.total<-delph.open$undev.seed+delph.open$undev.seed1 #creat
 #testZeroInflation(delph.prop.simulation) #checking for zero inflation
 ```
 
-Our model shows that the number of conspecifics and interaction between number of flowers and deviation had an effect on seed set. We again tested for overdispersion and zero inflation. We used the DHARMa package for the Delphinium proportion data, and the data are zero-inflated. We adjusted our model to account for this.
+Our model shows that the interation between number of conspecifics and plot treatment, as well as the interaction between number of flowers and deviation, had an effect on seed set. However, the data are zero-inflated and overdispersed. We adjusted our model to account for this.
 
 ```{r new delph model, warning=FALSE, message=FALSE}
-Delph.prop.glmmtmb<-glmmTMB(cbind(dev.seed.total,undev.seed.total) ~ X.flowers:deviation * early.late + number.conspecifics/plot.treat + rate + (1|site), ziformula=~1, family = betabinomial, data = delph.open) #modeling Delphinium proportion of developed seeds with betabinomial family and ziformula
+Delph.prop.glmmtmb<-glmmTMB(cbind(dev.seed.total,undev.seed.total) ~ X.flowers:(deviation * early.late) + X.flowers:number.conspecifics/plot.treat + (1|site), ziformula=~1, family = betabinomial, data = delph.open) #modeling Delphinium proportion of developed seeds with betabinomial family and ziformula
 summary(Delph.prop.glmmtmb) #summary of model output
 
 delph.prop.simulation<-simulateResiduals(fittedModel = Delph.prop.glmmtmb) #creating simulation for Delphinium model
@@ -777,13 +775,13 @@ plot(delph.prop.simulation) #plotting simulation
 testDispersion(delph.prop.simulation) #checking for overdispersion
 testZeroInflation(delph.prop.simulation) #checking for zero inflation
 ```
-After correcting for overdispersion and zero-inflation, we detected a marginally significant of deviation on the proportion of developed seeds for Delphinium individuals. We confirmed with the models below, and **the Delphinium individuals that deviated from the population peak had lower seed set when number of flowers was taken into account.** We again checked for overdispersion and zero-inflation in the new model, and the data are no longer overdispersed or zero-inflated.
+After correcting for overdispersion and zero-inflation, we did not detect an effect of blooming time or conspecific density.
 
 ### Pollen Limitation Model
 
-We created the mixed effects model for the pollen supplemented Delphinium individuals. Like the Mertensia model above, site and plot treatment are random effects, pollen limitation treatment is the fixed effect, and proportion of developed seeds is the response variable.
+We created the mixed effects model for the pollen supplemented Delphinium individuals. Like the Mertensia model above, site and plot treatment are random effects, the interaction between pollen limitation treatment and number of flowers is the fixed effect, and proportion of developed seeds is the response variable.
 
-```{r delph prop pollen lim,warning=FALSE}
+```{r delph prop pollen lim,warning=FALSE, message=FALSE}
 delph$dev.seed.total<-delph$dev.seed+delph$dev.seed1 #creating developed seeds column
 delph$undev.seed.total<-delph$undev.seed+delph$undev.seed1 #creating undeveloped seeds column
 ```
@@ -798,9 +796,9 @@ delph$undev.seed.total<-delph$undev.seed+delph$undev.seed1 #creating undeveloped
 #testZeroInflation(delph.prop.treat.simulation) #checking for zero inflation
 ```
 
-Delphinium proportions of developed seeds were significantly affected by pollen supplementation. The pollen limitation model for Delphinium proportion data is zero-inflated. As with the model above, we changed the family to beta binomial and included the zero-inflation formula.
+Delphinium proportions of developed seeds were significantly affected by pollen supplementation, but the pollen limitation model for Delphinium proportion data is zero-inflated. As with the model above, we changed the family to beta binomial and included the zero-inflation formula.
 
-```{r new prop pollen lim model}
+```{r new prop pollen lim model, warning=FALSE, message=FALSE}
 Delph.prop.treat.glmmtmb<-glmmTMB(cbind(dev.seed.total,undev.seed.total) ~ treat/X.flowers + (1|site/plot.treat), ziformula=~1, family = betabinomial, data = delph) #modeling pollen lim and proportion of developed seeds with glmmTMB
 summary(Delph.prop.treat.glmmtmb) #model summary
 
@@ -826,7 +824,7 @@ ggplot(delph.open, aes(x=delph.open$relative.position, y=delph.open$prop.dev.see
   geom_smooth()
 ```
 
-```{r Delphinium deviation proportion plot,message=FALSE}
+```{r Delphinium deviation proportion plot,warning=FALSE, message=FALSE}
 ggplot(delph.open, aes(x=delph.open$deviation, y=(delph.open$total.seeds/(delph.open$total.seeds+delph.open$undev.seed.total))/delph.open$X.flowers, group= delph.open$early.late)) +
   labs(y="Proportion of Developed Seeds per Flower",x="Days Relative to Population Peak Bloom",title="Effect of Delphinium Deviation from Peak on Proportion of Developed Seeds") +
   theme_classic() +
@@ -837,7 +835,7 @@ ggplot(delph.open, aes(x=delph.open$deviation, y=(delph.open$total.seeds/(delph.
   scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange"))
 ```
 
-```{r Delphinium plot conspecifics and proportions,message=FALSE}
+```{r Delphinium plot conspecifics and proportions,warning=FALSE, message=FALSE}
 ggplot(delph.open, aes(x=delph.open$number.conspecifics, y=delph.open$prop.dev.seeds, group= delph.open$plot.treat)) +
   labs(y="Proportion of Developed Seeds",x="Conspecific Density",title="Effect of Delphinium Conspecific Density on Proportion of Developed Seeds") +
   theme_classic() +
@@ -868,8 +866,10 @@ ggplot(delph, aes(x=as.Date.factor(delph$midpoint), y=delph$prop.dev.seeds, grou
 
 ## Mertensia
 
-```{r main hurdle model with lme4, warning=FALSE}
+```{r main hurdle model with lme4, warning=FALSE, eval=FALSE}
 mert.open$non_zero <- ifelse(mert.open$seeds.per.flower > 0, 1, 0) # creating zero/non-zero column
+
+# also running into errors when evaluating this first line. Error: "Response is constant." Could be from not enough 0 entries?
 
 mert.hurdle<-glmer(non_zero ~ early.late*deviation + number.conspecifics/plot.treat + rate + (1|site), data=mert.open,family = binomial) # model with new column
 
@@ -880,9 +880,11 @@ summary(mert.hurdle) # viewing model results
 summary(mert.gamma)
 ```
 
+None of the variables affected the presence or absence of seeds for Mertensia individuals. When evaluating the individuals that produced seeds, we detect an effect of conspecific density and soil moisture decline on the seeds per flower.
+
 ## Delphinium
 
-```{r delph hurdle model with lme4, warning=FALSE}
+```{r delph hurdle model with lme4, warning=FALSE, message=FALSE}
 delph.open$non_zero <- ifelse(delph.open$seeds.per.flower > 0, 1, 0) # creating zero/non-zero column
 
 delph.hurdle<-glmer(non_zero ~ early.late*deviation + number.conspecifics/plot.treat + rate + (1|site), data=delph.open,family = binomial) # model with new column
@@ -893,10 +895,11 @@ delph.gamma<-glmer(seeds.per.flower ~ early.late*deviation + number.conspecifics
 summary(delph.hurdle) # viewing model results
 summary(delph.gamma)
 ```
+As with Mertensia, none of the variables affected the ability for individuals to produce seeds. In terms of the Delphinium individuals that did produce seeds, the soil moisture decline has a significant effect on the seeds per flower in Delphinium. 
 
 ## Potentilla
 
-```{r pot hurdle model with lme4, warning=FALSE}
+```{r pot hurdle model with lme4, warning=FALSE,eval=FALSE}
 pot.open$non_zero <- ifelse(pot.open$seeds.per.flower > 0, 1, 0) # creating zero/non-zero column
 
 # had issues running these ones because so few open treatment individuals were 0 in the zero/non-zero breakdown, got error message and I'm still working on it
