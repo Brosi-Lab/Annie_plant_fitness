@@ -197,64 +197,6 @@ pot<-merge(pot,pot.counts.by.site, by.x = c("site","plot.treat","week.estimate")
 ```
 
 
-# Mixed Effects Models: Effect of Soil Moisture Variables
-
-Soil moisture is a covariate that may impact seed production. In the field, we measured soil moisture in designated areas of the plot once per week, for 9 weeks. To understand which variables representing change in soil moisture are most influential for seed production, we ran a generalized linear mixed model with all of the soil moisture variables. Site, plot treatment, and species are random effects, while the soil moisture variables (mean moisture, rate of change, effective minimum or value at week 7, final moisture reading, and range) are fixed effects. Once we had this model, we ran the dredge function to find the most appropriate combination of variables for our larger model.
-
-We are including all of the individuals of the three species and using species as a random effect.
-
-First, we combined the variables for the three species in order to run the model selection with all of the collected seeds. We checked the distribution of the total number of developed seeds and found that they fit a negative binomial distribution. Next we checked the distribution for seeds per flower and found that they fit an exponential distribution.
-
-```{r combining all of the seed data, warning=FALSE, message=FALSE}
-condensed.mert<-mert[,c(-4,-20,-21,-23,-24,-30)] #removing unnecessary columns
-condensed.delph<-delph[,c(-4,-20:-28,-30,-36)]
-condensed.pot<-pot[,c(-4,-20:-28,-30,-33:-37)]
-names(condensed.mert)[names(condensed.mert)=="dev.seed"]<-"total.seeds"
-
-condensed.mert<-condensed.mert[(condensed.mert$treat=="open"),] #limiting to open treatment
-condensed.delph<-condensed.delph[(condensed.delph$treat=="open"),] 
-condensed.pot<-condensed.pot[(condensed.pot$treat=="open"),] 
-
-all.seeds<-rbind(condensed.mert,condensed.delph,condensed.pot) #combining all of the data sets
-
-all.seed.nbinom<-fitdist(all.seeds$total.seeds, "nbinom") #fitting Mertensia data to negative binomial distribution using fitdistplus
-plot(all.seed.nbinom) #plotting to see the fit
-
-#all.seeds.exp<-fitdist(all.seeds$seeds.per.flower,"exp") #checking exponential distribution
-#plot(all.seeds.exp) #plotting exponential distribution
-```
-
-Because the total seeds fit a negative binomial distribution, we used the glmmTMB package. Because the seeds per flower variable fit a exponential distribution, we used the lme4 package. The seeds per flower variable requires the Gamma family, which means we had to create a hurdle model to avoid the zeros in our data. Hurdle models involve a first binomial model with zeros and non-zeros as the response variable, and a second Gamma model with seeds per flower as the response variable. The first model shows us if the soil moisture impacts the ability for species to produce seeds (success/failure).
-
-```{r soil model with glmmtmb, warning=FALSE, message=FALSE}
-soil.mod<-glmmTMB(total.seeds ~ mean + rate + effect.min + end + range + (1|site/plot.treat) + (1|species), family = "nbinom2", data = all.seeds) #model for soil moisture variables with all seeds
-summary(soil.mod)
-```
-
-```{r hurdle model with lme4, warning=FALSE, message=FALSE}
-all.seeds$non_zero <- ifelse(all.seeds$seeds.per.flower > 0, 1, 0) # creating zero/non-zero column
-
-soil.mod2.hurdle<-glmer(non_zero ~ mean + rate + effect.min + end + range + (1|site/plot.treat) + (1|species), data=all.seeds,family = binomial) # model with new column
-
-all.seeds.nonzero = subset(all.seeds,non_zero==1)
-soil.mod2<-glmer(seeds.per.flower ~ mean + rate + effect.min + end + range + (1|site/plot.treat) + (1|species), family=Gamma,data = all.seeds.nonzero,na.action = "na.fail") # model without zeros
-
-summary(soil.mod2.hurdle) # viewing model results
-summary(soil.mod2)
-```
-In our soil moisture hurdle model, the soil moisture variables did not affect the success or failure of the plants to produce seeds (zero-nonzero), and a few soil moisture variables did affect the number of seeds/flower. Therefore, we can run a model selection on the second model that excludes the zeros.
-
-We ran two models selections: one for the glmmTMB model with the count data and one for the glmer model with the seeds/flower data.
-
-```{r model selection with dredge, message=FALSE, warning=FALSE}
-dredge_result<-dredge(soil.mod) #using dredge function for model selection
-subset(dredge_result, delta<4)
-
-dredge_result2<-dredge(soil.mod2) #using dredge function for model selection
-subset(dredge_result2, delta<4)
-```
-After running the model selections, we found that rate of soil moisture with effective minimum moisture was the best model for the seeds/flower response variable and the end soil moisture was the best model for the seed count data. 
-
 # Mixed Effects Models with Count Data
 
 Generalized linear mixed effects models were appropriate for this analysis because the data contain sources of non-independence. Individual plants were located in the same site as other individuals and were likely genetically similar. Therefore, we considered site a random effect. 
@@ -649,6 +591,11 @@ Only the Mertensia and Delphinium data included proportion of developed seeds to
 ## Mertensia
 
 First, we had to calculate undeveloped seeds to use the cbind function for our proportion of developed seeds.
+```{r checking binom dist, warning=FALSE,message=FALSE}
+mert.open<-mert.open[!is.na(mert.open$prop.dev.seeds),]
+mert.binom<-fitdist(mert.open$prop.dev.seeds, "norm",start = NULL) #fitting Mertensia data to binomial distribution with normal errors using fitdistplus
+plot(mert.binom) #plotting to see the fit
+```
 
 ```{r Mertensia undeveloped seeds, warning=FALSE, message=FALSE}
 mert.open$undev.seeds<-(mert.open$total.seeds-mert.open$dev.seed) #creating an undeveloped seed column for cbind
@@ -750,6 +697,12 @@ We had to find the total developed seeds and undeveloped seeds before creating t
 ```{r Delphinium proportion model,warning=FALSE, message=FALSE}
 delph.open$dev.seed.total<-delph.open$dev.seed+delph.open$dev.seed1 #creating developed seeds column
 delph.open$undev.seed.total<-delph.open$undev.seed+delph.open$undev.seed1 #creating undeveloped seeds column
+```
+
+```{r checking delph binom dist, warning=FALSE,message=FALSE}
+delph.open<-delph.open[!is.na(delph.open$prop.dev.seeds),]
+delph.binom<-fitdist(delph.open$prop.dev.seeds, "norm") #fitting delphinium data to binomial distribution with normal errors using fitdistplus
+plot(delph.binom) #plotting to see the fit
 ```
 
 ### Main Model
@@ -862,56 +815,6 @@ ggplot(delph, aes(x=as.Date.factor(delph$midpoint), y=delph$prop.dev.seeds, grou
   scale_x_date(date_breaks = "3 days", date_labels = "%m/%d")
 ```
 
-# Mixed Effects Models with Seeds per Flower
-
-## Mertensia
-
-```{r main hurdle model with lme4, warning=FALSE, eval=FALSE}
-mert.open$non_zero <- ifelse(mert.open$seeds.per.flower > 0, 1, 0) # creating zero/non-zero column
-
-# also running into errors when evaluating this first line. Error: "Response is constant." Could be from not enough 0 entries?
-
-mert.hurdle<-glmer(non_zero ~ early.late*deviation + number.conspecifics/plot.treat + rate + (1|site), data=mert.open,family = binomial) # model with new column
-
-mert.open.nonzero = subset(mert.open,non_zero==1)
-mert.gamma<-glmer(seeds.per.flower ~ early.late*deviation + number.conspecifics/plot.treat + rate + (1|site), family=Gamma, data = mert.open.nonzero, na.action = "na.fail") # model without zeros
-
-summary(mert.hurdle) # viewing model results
-summary(mert.gamma)
-```
-
-None of the variables affected the presence or absence of seeds for Mertensia individuals. When evaluating the individuals that produced seeds, we detect an effect of conspecific density and soil moisture decline on the seeds per flower.
-
-## Delphinium
-
-```{r delph hurdle model with lme4, warning=FALSE, message=FALSE}
-delph.open$non_zero <- ifelse(delph.open$seeds.per.flower > 0, 1, 0) # creating zero/non-zero column
-
-delph.hurdle<-glmer(non_zero ~ early.late*deviation + number.conspecifics/plot.treat + rate + (1|site), data=delph.open,family = binomial) # model with new column
-
-delph.open.nonzero = subset(delph.open,non_zero==1)
-delph.gamma<-glmer(seeds.per.flower ~ early.late*deviation + number.conspecifics/plot.treat + rate + (1|site), family=Gamma, data = delph.open.nonzero) # model without zeros
-
-summary(delph.hurdle) # viewing model results
-summary(delph.gamma)
-```
-As with Mertensia, none of the variables affected the ability for individuals to produce seeds. In terms of the Delphinium individuals that did produce seeds, the soil moisture decline has a significant effect on the seeds per flower in Delphinium. 
-
-## Potentilla
-
-```{r pot hurdle model with lme4, warning=FALSE,eval=FALSE}
-pot.open$non_zero <- ifelse(pot.open$seeds.per.flower > 0, 1, 0) # creating zero/non-zero column
-
-# had issues running these ones because so few open treatment individuals were 0 in the zero/non-zero breakdown, got error message and I'm still working on it
-
-pot.hurdle<-glmer(non_zero ~ early.late*deviation + number.conspecifics/plot.treat + rate + (1|site), data=pot.open,family = binomial) # model with new column
-
-pot.open.nonzero = subset(pot.open,non_zero==1)
-pot.gamma<-glmer(seeds.per.flower ~ early.late*deviation + number.conspecifics/plot.treat + rate + (1|site), family=Gamma, data = pot.open.nonzero) # model without zeros
-
-summary(pot.hurdle) # viewing model results
-summary(pot.gamma)
-```
 
 # Session Info
 
