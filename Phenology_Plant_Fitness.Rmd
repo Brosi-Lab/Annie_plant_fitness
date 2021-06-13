@@ -798,6 +798,31 @@ ggplot(delph, aes(x=as.Date.factor(delph$midpoint), y=delph$prop.dev.seeds, grou
   scale_x_date(date_breaks = "3 days", date_labels = "%m/%d")
 ```
 
+```{r bar plot pollen lim}
+ggplot(mert, aes(x=treat, y=dev.seed/flowers)) +
+  labs(y="Total developed seeds", x="Pollen limitation treatment") +
+  theme_classic() +
+  geom_col()
+ggplot(mert, aes(x=treat, y=prop.dev.seeds/flowers)) +
+  labs(y="Proportion developed seeds", x="Pollen limitation treatment") +
+  theme_classic() +
+  geom_col()
+
+ggplot(delph, aes(x=treat, y=total.seeds/X.flowers)) +
+  labs(y="Total developed seeds", x="Pollen limitation treatment") +
+  theme_classic() +
+  geom_col()
+ggplot(delph, aes(x=treat, y=prop.dev.seeds/X.flowers)) +
+  labs(y="Proportion developed seeds", x="Pollen limitation treatment") +
+  theme_classic() +
+  geom_col()
+
+ggplot(pot, aes(x=treat, y=total.seeds/X.flowers)) +
+  labs(y="Total developed seeds", x="Pollen limitation treatment") +
+  theme_classic() +
+  geom_col()
+```
+
 
 # Session Info
 
