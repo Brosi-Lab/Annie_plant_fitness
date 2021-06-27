@@ -65,13 +65,14 @@ The first dataset contains the individual data for Mertensia fusiformis, which w
 mert = read.csv("Mertensia_final2.csv") # read in Mertensia data
 mert$prop.dev.seeds<-(mert$dev.seed/mert$total.seeds) #adding proportion of developed seeds
 mert$deviation<-abs(mert$relative.position) #getting deviation from the peak
+
 mert$early.late<-factor(NA, levels = c("early","late")) #creating early/late variables based on relative position
-mert$seeds.per.flower<-(mert$dev.seed/mert$flowers)
 mert$early.late[mert$relative.position<0]<-"early"
 mert$early.late[mert$relative.position>0]<-"late"
+mert<-mert[!is.na(mert$early.late),]
+
 mert<-mert[!is.na(mert$dev.seed),]
-#mert<-mert[!is.na(mert$relative.position),] #removing NA values from relative position column
-#mert<-mert[!is.na(mert$early.late),]
+mert$prop.dev.seeds[is.na(mert$prop.dev.seeds)] <-0
 ```
 
 ## Delphinium Data
@@ -80,16 +81,19 @@ The second dataset contains individual data for Delphinium nuttallianum. Delphin
 
 ```{r Delphinium data import}
 delph = read.csv("Delphinium_final2.csv") # read in Delphinium data
-delph$prop.dev.seeds<-(delph$total.seeds/(delph$undev.seed1+delph$undev.seed+delph$total.seeds)) #adding proportion of developed seeds
+delph$undev.seed1[is.na(delph$undev.seed1)] <- 0 #converting NA to 0
+delph$dev.seed.total<-delph$dev.seed+delph$dev.seed1 #creating developed seeds column
+delph$undev.seed.total<-delph$undev.seed+delph$undev.seed1 #creating undeveloped seeds column
+delph$prop.dev.seeds<-(delph$dev.seed.total/(delph$dev.seed.total+delph$undev.seed.total)) #adding proportion of developed seeds
+
 delph$deviation<-abs(delph$relative.position) #getting deviation from the peak
 delph$early.late<-factor(NA, levels = c("early","late")) #creating early/late variables based on relative position
 delph$early.late[delph$relative.position<0]<-"early"
 delph$early.late[delph$relative.position>0]<-"late"
-delph$seeds.per.flower<-((delph$dev.seed1+delph$dev.seed)/delph$X.flowers)
-delph$undev.seed1[is.na(delph$undev.seed1)] <- 0 #converting NA to 0
-delph<-delph[!is.na(delph$total.seeds),]
-#delph<-delph[!is.na(delph$early.late),]
-#delph<-delph[!is.na(delph$relative.position),] #removing NA values in the relative position
+delph<-delph[!is.na(delph$early.late),]
+
+delph<-delph[!is.na(delph$dev.seed.total),]
+delph$prop.dev.seeds[is.na(delph$prop.dev.seeds)] <-0
 ```
 
 ## Potentilla Data
@@ -98,16 +102,12 @@ The third dataset contains Potentilla pulcherrima data. Potentilla was set up in
 
 ```{r Potentilla data import}
 pot = read.csv("Potentilla_final2.csv") # read in Potentilla data
-pot<-pot[c(-119,-223),] #removing one row with NA in treatment column
 pot$deviation<-abs(pot$relative.position) #getting deviation from the peak
+
 pot$early.late<-factor(NA, levels = c("early","late")) #creating early/late variables based on relative position
 pot$early.late[pot$relative.position<0]<-"early"
 pot$early.late[pot$relative.position>0]<-"late"
-pot$seeds.per.flower<-((pot$dev.seed.sharp+pot$dev.seed.rest)/pot$X.flowers)
-pot$fl.count.sharp[is.na(pot$fl.count.sharp)] <- 0 #converting NA to 0
-pot<-pot[!is.na(pot$total.seeds),] #removing NA values in total seeds column
-#pot<-pot[!is.na(pot$early.late),] #removing NA values in early/late column
-#pot<-pot[!is.na(pot$relative.position),] #removing NA values in relative position
+pot<-pot[!is.na(pot$early.late),] #removing NA values in early/late column
 ```
 
 Because many of the Potentilla individuals were still in bloom when we finished our field season, we had to calculate a midpoint and relative position based on those individuals that had senesced. A key factor that determines duration of blooming is the number of flowers on the individual. The data imported includes those relative position estimates for the individuals that didn't senesce before we finished our field season. For more information on how those numbers were calculated, see Data_Cleaning.Rmd.
@@ -207,9 +207,11 @@ The response variable is total seeds, which is discrete and non-zero. The intera
 
 We started by limiting the individuals to the open treatment (excluding the hand-pollinated treatment) and by checking the distribution of the total seed counts.
 
-```{r limiting Mertensia to open, warning=FALSE, message=FALSE}
+```{r creating mert open}
 mert.open<-mert[(mert$treat=="open"),] #removed hand pollination treatment
+```
 
+```{r limiting Mertensia to open, warning=FALSE, message=FALSE}
 mert.nbinom<-fitdist(mert.open$dev.seed, "nbinom") #fitting Mertensia data to negative binomial distribution using fitdistplus
 plot(mert.nbinom) #plotting to see the fit
 ```
@@ -309,8 +311,8 @@ ggplot(mert.open, aes(x=mert.open$deviation, y=mert.open$dev.seed/mert.open$flow
 Then we plotted the effect of conspecific density and plot treatment on total developed seeds.
 
 ```{r Mertensia plot with conspecific density, warning=FALSE, message=FALSE}
-ggplot(mert.open, aes(x=mert.open$number.conspecifics, y=mert.open$dev.seed, group= mert.open$plot.treat)) +
-  labs(y="Total Developed Seeds",x="Conspecific Density", title="Effect of Mertensia Conspecific Density on Total Developed Seeds") +
+ggplot(mert.open, aes(x=mert.open$number.conspecifics, y=mert.open$dev.seed/mert.open$flowers, group= mert.open$plot.treat)) +
+  labs(y="Total Developed Seeds per Flower",x="Conspecific Density", title="Effect of Mertensia Conspecific Density on Total Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
   geom_smooth(method="glm",aes(color=plot.treat)) +
@@ -324,8 +326,8 @@ Finally, we plotted all of the data with the pollinator active period. The polli
 ```{r Mertensia poll act plot, warning=FALSE, message=FALSE}
 mert$midpoint2<-format(as.Date(mert$midpoint), format="%m-%d")
 
-ggplot(mert, aes(x=mert$midpoint2, y=mert$dev.seed, group= mert$treat)) +
-  labs(y="Total Developed Seeds",x="Date", title="Effect of Mertensia Blooming Time and Pollinator Activity on Total Developed Seeds") +
+ggplot(mert, aes(x=mert$midpoint2, y=mert$dev.seed/mert$flowers, group= mert$treat)) +
+  labs(y="Total Developed Seeds per Flower",x="Date", title="Effect of Mertensia Blooming Time and Pollinator Activity on Total Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=treat)) +
   geom_smooth(aes(color=treat)) +
@@ -341,9 +343,11 @@ ggplot(mert, aes(x=mert$midpoint2, y=mert$dev.seed, group= mert$treat)) +
 
 For Delphinium, we again limited the individuals to open treatment individuals.
 
-```{r limiting Delphinium to open, warning=FALSE,message=FALSE}
+```{r creating delph open}
 delph.open<-delph[(delph$treat=="open"),] #removed hand pollination treatment
+```
 
+```{r checking distribution, warning=FALSE, message=FALSE}
 delph.nbinom<-fitdist(delph.open$total.seeds, "nbinom") #fitting negative binomial distribution using fitdistplus package
 plot(delph.nbinom) #plotting distribution fit
 ```
@@ -430,8 +434,8 @@ ggplot(delph.open, aes(x=delph.open$deviation, y=(delph.open$total.seeds/delph.o
 
 
 ```{r Delphinium plot with conspecific density,warning=FALSE, message=FALSE}
-ggplot(delph.open, aes(x=delph.open$number.conspecifics, y=delph.open$total.seeds, group= delph.open$plot.treat)) +
-  labs(y="Total Developed Seeds",x="Conspecific Density", title="Effect of Delphinium Conspecific Density on Total Developed Seeds") +
+ggplot(delph.open, aes(x=delph.open$number.conspecifics, y=delph.open$total.seeds/delph.open$X.flowers, group= delph.open$plot.treat)) +
+  labs(y="Total Developed Seeds per Flower",x="Conspecific Density", title="Effect of Delphinium Conspecific Density on Total Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
   geom_smooth(method="glm",aes(color=plot.treat)) +
@@ -445,8 +449,8 @@ Finally, we plotted the pollinator active period with the total number of develo
 ```{r delph poll act plot, warning=FALSE, message=FALSE}
 delph$midpoint2<-format(as.Date(delph$midpoint), format="%m-%d")
 
-ggplot(delph, aes(x=delph$midpoint2, y=delph$total.seeds, group= delph$treat)) +
-  labs(y="Total Developed Seeds",x="Date", title="Effect of Delphinium Blooming Time and Pollinator Activity on Total Developed Seeds") +
+ggplot(delph, aes(x=delph$midpoint2, y=delph$total.seeds/delph$X.flowers, group= delph$treat)) +
+  labs(y="Total Developed Seeds",x="Date", title="Effect of Delphinium Blooming and Pollinator Activity on Total Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=treat)) +
   geom_smooth(aes(color=treat)) +
@@ -461,9 +465,11 @@ ggplot(delph, aes(x=delph$midpoint2, y=delph$total.seeds, group= delph$treat)) +
 
 We began by limiting the data to the open treatment Potentilla individuals.
 
-```{r limiting Potentilla to open, warning=FALSE,message=FALSE}
+```{r limiting potentilla to open}
 pot.open<-pot[(pot$treat=="open"),] #removed hand pollination treatment
+```
 
+```{r checking potentilla distribution, warning=FALSE,message=FALSE}
 pot.nbinom<-fitdist(pot.open$total.seeds, "nbinom") #fitting negative binomial distribution using fitdistplus package
 plot(pot.nbinom) #plotting distribution fit
 ```
@@ -558,8 +564,8 @@ ggplot(pot.open, aes(x=pot.open$deviation, y=pot.open$total.seeds/pot.open$X.flo
 ```
 
 ```{r Potentilla plot with conspecific density,warning=FALSE, message=FALSE}
-ggplot(pot.open, aes(x=pot.open$number.conspecifics, y=pot.open$total.seeds, group= pot.open$plot.treat)) +
-  labs(y="Total Developed Seeds",x="Conspecific Density", title="Effect of Potentilla Conspecific Density on Total Developed Seeds") +
+ggplot(pot.open, aes(x=pot.open$number.conspecifics, y=pot.open$total.seeds/pot.open$X.flowers, group= pot.open$plot.treat)) +
+  labs(y="Total Developed Seeds per Flower",x="Conspecific Density", title="Effect of Potentilla Conspecific Density on Total Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
   geom_smooth(method="glm",aes(color=plot.treat)) +
@@ -571,8 +577,8 @@ ggplot(pot.open, aes(x=pot.open$number.conspecifics, y=pot.open$total.seeds, gro
 Again we plotted the pollinator activity period.
 
 ```{r pot poll act plot, warning=FALSE, message=FALSE}
-ggplot(pot,aes(x=as.Date.factor(pot$midpoint), y=pot$total.seeds, group= pot$treat)) +
-  labs(y="Total Developed Seeds",x="Date", title="Pollinator Activity Period and Total Developed Seeds in Potentilla") +
+ggplot(pot,aes(x=as.Date.factor(pot$midpoint), y=pot$total.seeds/pot$X.flowers, group= pot$treat)) +
+  labs(y="Total Developed Seeds per Flower",x="Date", title="Pollinator Activity Period and Total Developed Seeds in Potentilla") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=treat)) +
   geom_smooth(aes(color=treat)) +
@@ -592,13 +598,14 @@ Only the Mertensia and Delphinium data included proportion of developed seeds to
 
 First, we had to calculate undeveloped seeds to use the cbind function for our proportion of developed seeds.
 ```{r checking binom dist, warning=FALSE,message=FALSE}
-mert.open<-mert.open[!is.na(mert.open$prop.dev.seeds),]
 mert.binom<-fitdist(mert.open$prop.dev.seeds, "norm",start = NULL) #fitting Mertensia data to binomial distribution with normal errors using fitdistplus
 plot(mert.binom) #plotting to see the fit
 ```
 
 ```{r Mertensia undeveloped seeds, warning=FALSE, message=FALSE}
 mert.open$undev.seeds<-(mert.open$total.seeds-mert.open$dev.seed) #creating an undeveloped seed column for cbind
+
+mert$undev.seeds<-(mert$total.seeds-mert$dev.seed) #creating an undeveloped seed column for cbind
 ```
 
 ### Main Model
@@ -622,8 +629,6 @@ We found a significant effect of deviation from the population peak on the propo
 Next, we created the pollen limitation model for the Mertensia developed seeds. The model includes site and plot treatment as random effects like the models above. Now the proportion of developed seeds is the response variable.
 
 ```{r Mert prop pollen treat,warning=FALSE, message=FALSE}
-mert$undev.seeds<-(mert$total.seeds-mert$dev.seed) #creating an undeveloped seed column for cbind
-
 Mert.prop.treat.glmmtmb<-glmmTMB(cbind(dev.seed,undev.seeds) ~ treat/flowers + (1|site/plot.treat), family = binomial, data = mert) #model with pollen lim treatment and proportion of developed seeds using the glmmTMB package
 summary(Mert.prop.treat.glmmtmb) #summary of model results
 
@@ -633,7 +638,7 @@ testDispersion(mert.prop.treat.simulation) #checking for overdispersion
 testZeroInflation(mert.prop.treat.simulation) #checking for zero inflation
 ```
 
-We did detected a significant effect of pollen supplementation on the proportions of developed seeds for Mertensia individuals, as well as a marginally significant interaction between flower number and pollination treatment. We again checked to see if the data were overdispersed or zero-inflated, and they were not. **In conjunction with the seed count results above, it is clear that Mertensia individuals are pollen limited.**
+We didn't detected a significant effect of pollen supplementation on the proportions of developed seeds for Mertensia individuals. We again checked to see if the data were overdispersed or zero-inflated, and they were not. **In contrast to the seed count results above, Mertensia individuals may not be pollen limited.**
 
 ### Figures
 
@@ -652,7 +657,7 @@ ggplot(mert.open, aes(x=mert.open$relative.position, y=mert.open$prop.dev.seeds,
 
 ```{r Mertensia deviation proportion plot,warning=FALSE, message=FALSE}
 ggplot(mert.open, aes(x=mert.open$deviation, y=mert.open$prop.dev.seeds/mert.open$flowers, group= mert.open$early.late)) +
-  labs(y="Proportion of Developed Seeds",x="Days Relative to Population Peak Bloom",title="Effect of Mertensia Deviation from Peak on Proportion of Developed Seeds") +
+  labs(y="Proportion of Developed Seeds per Flower",x="Days Relative to Population Peak Bloom",title="Effect of Mertensia Deviation from Peak on Proportion of Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
@@ -665,7 +670,7 @@ Despite a marginally significant interaction effect, the effect of deviation on 
 
 ```{r mertensia plot conspecifics and proportions,warning=FALSE, message=FALSE}
 ggplot(mert.open, aes(x=mert.open$number.conspecifics, y=mert.open$prop.dev.seeds/mert.open$flowers, group= mert.open$plot.treat)) +
-  labs(y="Proportion of Developed Seeds",x="Conspecific Density",title="Effect of Mertensia Conspecific Density on Proportion of Developed Seeds") +
+  labs(y="Proportion of Developed Seeds per Flower",x="Conspecific Density",title="Effect of Mertensia Conspecific Density on Proportion of Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
   geom_smooth(method="glm",aes(color=plot.treat)) +
@@ -677,8 +682,8 @@ ggplot(mert.open, aes(x=mert.open$number.conspecifics, y=mert.open$prop.dev.seed
 Finally, we added pollinator activity.
 
 ```{r Mertensia prop poll act plot, message=FALSE, warning=FALSE}
-ggplot(mert, aes(x=as.Date.factor(mert$midpoint), y=mert$prop.dev.seeds, group= mert$treat)) +
-  labs(y="Proportion of Developed Seeds",x="Date", title="Pollinator Activity Period and Proportion of Developed Seeds in Mertensia") +
+ggplot(mert, aes(x=as.Date.factor(mert$midpoint), y=mert$prop.dev.seeds/mert$flowers, group= mert$treat)) +
+  labs(y="Proportion of Developed Seeds per Flower",x="Date", title="Pollinator Activity Period and Proportion of Developed Seeds in Mertensia") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=treat)) +
   geom_smooth(aes(color=treat)) +
@@ -694,13 +699,8 @@ ggplot(mert, aes(x=as.Date.factor(mert$midpoint), y=mert$prop.dev.seeds, group= 
 
 We had to find the total developed seeds and undeveloped seeds before creating the model. To do this, we combined the seed counts of the first flower in bloom with the rest of the flowers on the plant.
 
-```{r Delphinium proportion model,warning=FALSE, message=FALSE}
-delph.open$dev.seed.total<-delph.open$dev.seed+delph.open$dev.seed1 #creating developed seeds column
-delph.open$undev.seed.total<-delph.open$undev.seed+delph.open$undev.seed1 #creating undeveloped seeds column
-```
 
 ```{r checking delph binom dist, warning=FALSE,message=FALSE}
-delph.open<-delph.open[!is.na(delph.open$prop.dev.seeds),]
 delph.binom<-fitdist(delph.open$prop.dev.seeds, "norm") #fitting delphinium data to binomial distribution with normal errors using fitdistplus
 plot(delph.binom) #plotting to see the fit
 ```
@@ -710,7 +710,7 @@ plot(delph.binom) #plotting to see the fit
 Below is the mixed effects model for the proportion of developed seeds. The individuals are still only limited to the open treatment. 
 
 ```{r delphinium proportion model, warning=FALSE,message=FALSE}
-Delph.prop.glmmtmb<-glmmTMB(cbind(dev.seed.total,undev.seed.total) ~ X.flowers:(deviation * early.late) + X.flowers:number.conspecifics/plot.treat + (1|site), family = binomial, data = delph.open) #modeling Delphinium proportion of developed seeds with glmmTMB package
+Delph.prop.glmmtmb<-glmmTMB(cbind(dev.seed.total,undev.seed.total) ~ X.flowers:(deviation * early.late) + X.flowers:number.conspecifics/plot.treat + (1|site), family = betabinomial, data = delph.open) #modeling Delphinium proportion of developed seeds with glmmTMB package
 summary(Delph.prop.glmmtmb)
 
 delph.prop.simulation<-simulateResiduals(fittedModel = Delph.prop.glmmtmb) #creating simulation for Delphinium model
@@ -719,21 +719,16 @@ testDispersion(delph.prop.simulation) #checking for overdispersion
 testZeroInflation(delph.prop.simulation) #checking for zero inflation
 ```
 
-The seed set of Delphinium individuals was significantly affected by main effects of deviation, blooming early vs. late, and conspecific density, as well as the interaction effects. Deviation had a negative effect on the proportion of developed seeds, with a greater negative effect on early blooming indivdiuals. Conspecific density had a positive effect, with a greater positive effect on the later blooming individuals. Our model was not overdispersed. 
+The seed set of Delphinium individuals wasn't significantly affected by relative blooming time and conspecific density. Our model was overdispersed to binomial errors, but not to betabinomial errors. 
+**Relative blooming time and conspecific density do not have an effect on the proportion of developed seeds in Delphinium individuals.**
 
-**When flower number is taken into account, early blooming individuals that deviate from the population peak experience lower seed set, and unmanipulated late blooming individuals benefit from conspecific pollen donors.**
 
 ### Pollen Limitation Model
 
 We created the mixed effects model for the pollen supplemented Delphinium individuals. Like the Mertensia model above, site and plot treatment are random effects, the interaction between pollen limitation treatment and number of flowers is the fixed effect, and proportion of developed seeds is the response variable.
 
-```{r delph prop pollen lim,warning=FALSE, message=FALSE}
-delph$dev.seed.total<-delph$dev.seed+delph$dev.seed1 #creating developed seeds column
-delph$undev.seed.total<-delph$undev.seed+delph$undev.seed1 #creating undeveloped seeds column
-```
-
 ```{r delph prop pollen lim model, warning=FALSE}
-Delph.prop.treat.glmmtmb<-glmmTMB(cbind(dev.seed.total,undev.seed.total) ~ treat/X.flowers + (1|site/plot.treat), family = binomial, data = delph) #modeling pollen lim and proportion of developed seeds with glmmTMB package
+Delph.prop.treat.glmmtmb<-glmmTMB(cbind(dev.seed.total,undev.seed.total) ~ treat/X.flowers + (1|site/plot.treat), family = betabinomial, data = delph) #modeling pollen lim and proportion of developed seeds with glmmTMB package
 summary(Delph.prop.treat.glmmtmb) #model summary
 
 delph.prop.treat.simulation<-simulateResiduals(fittedModel = Delph.prop.treat.glmmtmb) #creating simulation for Delphinium model
@@ -742,7 +737,7 @@ testDispersion(delph.prop.treat.simulation) #checking for overdispersion
 testZeroInflation(delph.prop.treat.simulation) #checking for zero inflation
 ```
 
-Delphinium proportions of developed seeds were significantly affected by pollen supplementation, and the data were not overdispersed to the binomial.
+Delphinium proportions of developed seeds were significantly affected by pollen supplementation, and the data were overdispersed to the binomial, but not to betabinomial errors.
 
 **As shown with total developed seeds, Delphinium individuals are pollen limited in this system.**
 
@@ -761,7 +756,7 @@ ggplot(delph.open, aes(x=delph.open$relative.position, y=delph.open$prop.dev.see
 ```
 
 ```{r Delphinium deviation proportion plot,warning=FALSE, message=FALSE}
-ggplot(delph.open, aes(x=delph.open$deviation, y=(delph.open$total.seeds/(delph.open$total.seeds+delph.open$undev.seed.total))/delph.open$X.flowers, group= delph.open$early.late)) +
+ggplot(delph.open, aes(x=delph.open$deviation, y=(delph.open$prop.dev.seeds/delph.open$X.flowers), group= delph.open$early.late)) +
   labs(y="Proportion of Developed Seeds per Flower",x="Days Relative to Population Peak Bloom",title="Effect of Delphinium Deviation from Peak on Proportion of Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
@@ -772,8 +767,8 @@ ggplot(delph.open, aes(x=delph.open$deviation, y=(delph.open$total.seeds/(delph.
 ```
 
 ```{r Delphinium plot conspecifics and proportions,warning=FALSE, message=FALSE}
-ggplot(delph.open, aes(x=delph.open$number.conspecifics, y=delph.open$prop.dev.seeds, group= delph.open$plot.treat)) +
-  labs(y="Proportion of Developed Seeds",x="Conspecific Density",title="Effect of Delphinium Conspecific Density on Proportion of Developed Seeds") +
+ggplot(delph.open, aes(x=delph.open$number.conspecifics, y=delph.open$prop.dev.seeds/delph.open$X.flowers, group= delph.open$plot.treat)) +
+  labs(y="Proportion of Developed Seeds per Flower",x="Conspecific Density",title="Effect of Delphinium Conspecific Density on Proportion of Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
   geom_smooth(method="glm",aes(color=plot.treat)) +
@@ -785,8 +780,8 @@ ggplot(delph.open, aes(x=delph.open$number.conspecifics, y=delph.open$prop.dev.s
 Finally, we added pollinator activity.
 
 ```{r delph poll act prop plot, message=FALSE, warning=FALSE}
-ggplot(delph, aes(x=as.Date.factor(delph$midpoint), y=delph$prop.dev.seeds, group= delph$treat)) +
-  labs(y="Proportion of Developed Seeds",x="Date", title="Pollinator Activity Period and Proportion of Developed Seeds in Delphinium") +
+ggplot(delph, aes(x=as.Date.factor(delph$midpoint), y=delph$prop.dev.seeds/delph$X.flowers, group= delph$treat)) +
+  labs(y="Proportion of Developed Seeds per Flower",x="Date", title="Pollinator Activity Period and Proportion of Developed Seeds in Delphinium") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=treat)) +
   geom_smooth(aes(color=treat)) +
