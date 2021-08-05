@@ -450,7 +450,7 @@ Finally, we plotted the pollinator active period with the total number of develo
 delph$midpoint2<-format(as.Date(delph$midpoint), format="%m-%d")
 
 ggplot(delph, aes(x=delph$midpoint2, y=delph$total.seeds/delph$X.flowers, group= delph$treat)) +
-  labs(y="Total Developed Seeds",x="Date", title="Effect of Delphinium Blooming and Pollinator Activity on Total Developed Seeds") +
+  labs(y="Total Developed Seeds per Flower",x="Date", title="Effect of Delphinium Blooming and Pollinator Activity on Total Developed Seeds") +
   theme_classic() +
   geom_point(size=3, alpha = 0.8, aes(color=treat)) +
   geom_smooth(aes(color=treat)) +
