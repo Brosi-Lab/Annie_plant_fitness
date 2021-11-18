@@ -15,7 +15,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-testing
+
 # Overview
 
 This project aims to connect floral phenology to reproductive success on the individual level for three subalpine plants. Data were collected at the Rocky Mountain Biological Laboratory during the 2019 field season. Focal species include Mertensia fusiformis, Potentilla pulcherrima, and Delphinium nuttallianum. 
@@ -299,8 +299,9 @@ We then plotted the interaction between deviation and early/late instead of rela
 
 ```{r Mertensia plot substituting relative position, warning=FALSE, message=FALSE}
 ggplot(mert.open, aes(x=mert.open$deviation, y=mert.open$dev.seed/mert.open$flowers, group= mert.open$early.late)) +
-  labs(y="Total Developed Seeds per Flower",x="Days Relative to Population Peak Bloom", title="Effect of Mertensia Deviation from Peak on Total Developed Seeds") + theme_classic() +
+  labs(y="Total Developed Seeds per Flower",x="Days Relative to Population Peak Bloom", title="Effect of Mertensia Deviation from Peak on Total Developed Seeds") +
   theme_classic() +
+  scale_x_continuous(breaks=seq(0,6,1)) +
   geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
   scale_color_brewer(palette="Dark2") + 
@@ -425,6 +426,7 @@ ggplot(delph.open, aes(x=delph.open$relative.position, y=delph.open$total.seeds,
 ggplot(delph.open, aes(x=delph.open$deviation, y=(delph.open$total.seeds/delph.open$X.flowers), group= delph.open$early.late)) +
   labs(y="Total Developed Seeds per Flower",x="Days Relative to Population Peak Bloom", title="Effect of Delphinium Deviation from Peak on Total Developed Seeds") +
   theme_classic() +
+  scale_x_continuous(breaks=seq(0,10,1)) +
   geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
   scale_color_brewer(palette="Dark2") + 
@@ -556,6 +558,7 @@ ggplot(pot.open, aes(x=pot.open$relative.position, y=pot.open$total.seeds, group
 ggplot(pot.open, aes(x=pot.open$deviation, y=pot.open$total.seeds/pot.open$X.flowers, group= pot.open$early.late)) +
   labs(y="Total Developed Seeds per Flower",x="Days Relative to Population Peak Bloom",title="Effect of Potentilla Deviation from Peak on Total Developed Seeds") +
   theme_classic() +
+  scale_x_continuous(breaks=seq(0,24,2)) +
   geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
   scale_color_brewer(palette="Dark2") + 
@@ -659,6 +662,7 @@ ggplot(mert.open, aes(x=mert.open$relative.position, y=mert.open$prop.dev.seeds,
 ggplot(mert.open, aes(x=mert.open$deviation, y=mert.open$prop.dev.seeds/mert.open$flowers, group= mert.open$early.late)) +
   labs(y="Proportion of Developed Seeds per Flower",x="Days Relative to Population Peak Bloom",title="Effect of Mertensia Deviation from Peak on Proportion of Developed Seeds") +
   theme_classic() +
+  scale_x_continuous(breaks=seq(0,6,1)) +
   geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
   scale_color_brewer(palette="Dark2") + 
@@ -759,6 +763,7 @@ ggplot(delph.open, aes(x=delph.open$relative.position, y=delph.open$prop.dev.see
 ggplot(delph.open, aes(x=delph.open$deviation, y=(delph.open$prop.dev.seeds/delph.open$X.flowers), group= delph.open$early.late)) +
   labs(y="Proportion of Developed Seeds per Flower",x="Days Relative to Population Peak Bloom",title="Effect of Delphinium Deviation from Peak on Proportion of Developed Seeds") +
   theme_classic() +
+  scale_x_continuous(breaks=seq(0,10,1)) +
   geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
   scale_color_brewer(palette="Dark2") + 
