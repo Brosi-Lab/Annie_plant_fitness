@@ -22,8 +22,7 @@ This project aims to connect floral phenology to reproductive success on the ind
 
 Our questions specifically ask: 
   1. how does blooming time affect seed set for individiuals in a population?
-  2. how do abiotic factors such as soil moisture affect individual seed set?
-  3. how do biotic factors such as conspecific density and pollen limitation affect individual seed set?
+  2. how do biotic factors such as conspecific density and pollen limitation affect individual seed set?
   
 We tagged individuals of the three species in control and manipulated plots in eight sites across East River valley and Washington Gulch. We tracked blooming time of those tagged individuals and conducted a pollen limitation experiment with two treatments, open and pollen-supplemented. Seed set was quantified as the count of total developed seeds and proportion of developed seeds in each individual. 
 
@@ -798,31 +797,63 @@ ggplot(delph, aes(x=as.Date.factor(delph$midpoint), y=delph$prop.dev.seeds/delph
   scale_x_date(date_breaks = "3 days", date_labels = "%m/%d")
 ```
 
+
+# Some last figures
+
+## Pollen limitation figures
+
+Some quick bar graphs to determine how the pollen supplementation treatment affected seed set
+
 ```{r bar plot pollen lim}
+#Mertensia plots with total developed seeds per flower and proportion of developed seeds per flower
 ggplot(mert, aes(x=treat, y=dev.seed/flowers)) +
-  labs(y="Total developed seeds", x="Pollen limitation treatment") +
+  labs(y="Total developed seeds", x="Pollen limitation treatment", title="Effect of pollen supplementation on Mertensia total developed seeds") +
   theme_classic() +
   geom_col()
 ggplot(mert, aes(x=treat, y=prop.dev.seeds/flowers)) +
-  labs(y="Proportion developed seeds", x="Pollen limitation treatment") +
+  labs(y="Proportion developed seeds", x="Pollen limitation treatment",title="Effect of pollen supplementation on Mertensia proportion of developed seeds") +
   theme_classic() +
   geom_col()
 
+#Delphinium plots with total developed seeds per flower and proportion of developed seeds per flower
 ggplot(delph, aes(x=treat, y=total.seeds/X.flowers)) +
-  labs(y="Total developed seeds", x="Pollen limitation treatment") +
+  labs(y="Total developed seeds", x="Pollen limitation treatment",title="Effect of pollen supplementation on Delphinium total developed seeds") +
   theme_classic() +
   geom_col()
 ggplot(delph, aes(x=treat, y=prop.dev.seeds/X.flowers)) +
-  labs(y="Proportion developed seeds", x="Pollen limitation treatment") +
+  labs(y="Proportion developed seeds", x="Pollen limitation treatment",title="Effect of pollen supplementation on Delphinium proportion of developed seeds") +
   theme_classic() +
   geom_col()
 
+#Potentilla plots with total developed seeds per flower
 ggplot(pot, aes(x=treat, y=total.seeds/X.flowers)) +
-  labs(y="Total developed seeds", x="Pollen limitation treatment") +
+  labs(y="Total developed seeds", x="Pollen limitation treatment",title="Effect of pollen supplementation on Potentilla total developed seeds") +
   theme_classic() +
   geom_col()
 ```
 
+## Flower number figures
+
+A few last graphs to see the relationship between plot treatment and flower number (on the individuals, not conspecific density flower counts).
+
+```{r plots showing relationship between plot treatment and number of flowers}
+#number of Mertensia flowers in each plot treatment
+ggplot(mert, aes(x=plot.treat, y=flowers)) +
+  labs(y="Number of flowers", x="Plot treatment",title="Effect of plot treatment on Mertensia flower number") +
+  theme_classic() +
+  geom_col()
+#number of Delphinium flowers in each plot treatment  
+ggplot(delph,aes(x=plot.treat, y=X.flowers)) +
+  labs(y="Number of flowers", x="Plot treatment",title="Effect of plot treatment on Delphinium flower number") +
+  theme_classic() +
+  geom_col()
+#number of Potentilla flowers in each plot treatment
+ggplot(pot,aes(x=plot.treat, y=X.flowers)) +
+  labs(y="Number of flowers", x="Plot treatment",title="Effect of plot treatment on Potentilla flower number") +
+  theme_classic() +
+  geom_col()
+
+```
 
 # Session Info
 
