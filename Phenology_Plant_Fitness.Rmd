@@ -146,7 +146,7 @@ mert.counts.by.site$plot.treat<-as.character(mert.counts.by.site$plot.treat)
 mert.counts.by.site$site[mert.counts.by.site$site=="Avery Picnic"]<-"AveryPicnic"
 mert.counts.by.site$site[mert.counts.by.site$site=="Stupid Falls"]<-"StupidFalls"
 mert.counts.by.site$site[mert.counts.by.site$site=="Wash 3C"]<-"WG3C"
-mert.counts.by.site$plot.treat[!(mert.counts.by.site$plot.treat=="Kaysee")]
+mert.counts.by.site <-mert.counts.by.site[!(mert.counts.by.site$plot.treat=="Kaysee"),]
 mert.counts.by.site$plot.treat[mert.counts.by.site$plot.treat=="Control"]<-"control"
 mert.counts.by.site$plot.treat[mert.counts.by.site$plot.treat=="Manipulated"]<-"manip"
 
@@ -173,7 +173,7 @@ delph.counts.by.site$plot.treat<-as.character(delph.counts.by.site$plot.treat)
 #fixing names
 delph.counts.by.site$site[delph.counts.by.site$site=="Rustlers Gulch"]<-"RustlersGulch" 
 delph.counts.by.site$site[delph.counts.by.site$site=="Wash 3C"]<-"WG3C"
-#delph.counts.by.site$plot.treat[!(delph.counts.by.site$plot.treat=="Kaysee")]
+delph.counts.by.site <-delph.counts.by.site[!(delph.counts.by.site$plot.treat=="Kaysee"),]
 delph.counts.by.site$plot.treat[delph.counts.by.site$plot.treat=="Control"]<-"control"
 delph.counts.by.site$plot.treat[delph.counts.by.site$plot.treat=="Manipulated"]<-"manip"
 
@@ -203,7 +203,7 @@ pot.counts.by.site$site[pot.counts.by.site$site=="Wash 3C"]<-"WG3C"
 pot.counts.by.site$site[pot.counts.by.site$site=="Bellview Bench"]<-"BellviewBench"
 pot.counts.by.site$site[pot.counts.by.site$site=="Avery Picnic"]<-"AveryPicnic"
 pot.counts.by.site$site[pot.counts.by.site$site=="Stupid Falls"]<-"StupidFalls"
-#pot.counts.by.site$plot.treat[!(pot.counts.by.site$plot.treat=="Kaysee")]
+pot.counts.by.site <-pot.counts.by.site[!(pot.counts.by.site$plot.treat=="Kaysee"),]
 pot.counts.by.site$plot.treat[pot.counts.by.site$plot.treat=="Control"]<-"control"
 pot.counts.by.site$plot.treat[pot.counts.by.site$plot.treat=="Manipulated"]<-"manip"
 
