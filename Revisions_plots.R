@@ -82,7 +82,7 @@ ggplot(mert.counts.by.site,aes(x=date,y=number.conspecifics,group=site)) +
 #plotting Delphinium flower counts
 ggplot(delph.counts.by.site,aes(x=date,y=number.conspecifics,group=site)) +
   theme_classic() +
-  labs(y="Floral Abundance",x="Date", title = "Delphinium Peak Bloom") +
+  labs(y="Floral Abundance",x="Week", title = "Delphinium Peak Bloom") +
   geom_point(aes(color=site)) +
   scale_color_brewer(palette="Dark2") +
   labs(color="Site") +
@@ -95,7 +95,7 @@ ggplot(delph.counts.by.site,aes(x=date,y=number.conspecifics,group=site)) +
 #plotting Potentilla flower counts
 ggplot(pot.counts.by.site,aes(x=date,y=number.conspecifics,group=site)) +
   theme_classic() +
-  labs(y="Floral Abundance",x="Date", title = "Potentilla Peak Bloom") +
+  labs(y="Floral Abundance",x="Week", title = "Potentilla Peak Bloom") +
   geom_point(aes(color=site)) +
   scale_color_brewer(palette="Dark2") +
   labs(color="Site") +
