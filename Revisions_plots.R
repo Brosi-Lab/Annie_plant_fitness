@@ -1,6 +1,10 @@
 
 library(ggplot2)
 
+mert.counts.by.site$date<-as.Date(mert.counts.by.site$date)
+delph.counts.by.site$date<-as.Date(delph.counts.by.site$date)
+pot.counts.by.site$date<-as.Date(pot.counts.by.site$date)
+
 ### By plot treatment
 
 #plotting Mertensia flower counts 
