@@ -1,5 +1,6 @@
 
 library(ggplot2)
+library(scales)
 
 mert.counts.by.site$date<-as.Date(mert.counts.by.site$date)
 delph.counts.by.site$date<-as.Date(delph.counts.by.site$date)
@@ -108,3 +109,43 @@ ggplot(pot.counts.by.site,aes(x=date,y=number.conspecifics,group=site)) +
   scale_x_date(date_breaks = "1 week",
                limits = as.Date(c('2019-07-11','2019-08-25')),
                labels = date_format(format = "%W"))
+
+#plotting all sites/treatments together
+#Mertensia
+ggplot(mert.counts.by.site,aes(x=date,y=number.conspecifics)) +
+  theme_classic() +
+  geom_point() +
+  geom_smooth(se=FALSE,color="darkgreen") +
+  geom_vline(xintercept=as.Date("2019-06-27")) +
+  geom_vline(xintercept = as.Date("2019-06-20"),linetype="dotdash") +
+  labs(y="Floral Abundance",x="Week", title = "Mertensia Peak Bloom") +
+  scale_color_brewer(palette="Dark2") +
+  theme(axis.text.x = element_text(angle = 90))+
+  scale_x_date(date_breaks = "1 week",
+               limits = as.Date(c('2019-06-07','2019-07-18')),
+               labels = date_format(format = "%W"))
+#Delphinium
+ggplot(delph.counts.by.site,aes(x=date,y=number.conspecifics)) +
+  theme_classic() +
+  geom_point() +
+  geom_smooth(se=FALSE,color="darkgreen") +
+  geom_vline(xintercept=as.Date("2019-07-06")) +
+  labs(y="Floral Abundance",x="Week", title = "Delphinium Peak Bloom") +
+  scale_color_brewer(palette="Dark2") +
+  theme(axis.text.x = element_text(angle = 90))+
+  scale_x_date(date_breaks = "1 week",
+               limits = as.Date(c('2019-06-18','2019-07-25')),
+               labels = date_format(format = "%W"))
+#Potentilla
+ggplot(pot.counts.by.site,aes(x=date,y=number.conspecifics)) +
+  theme_classic() +
+  geom_point() +
+  geom_smooth(se=FALSE,color="darkgreen") +
+  geom_vline(xintercept=as.Date("2019-08-02")) +
+  labs(y="Floral Abundance",x="Week", title = "Potentilla Peak Bloom") +
+  scale_color_brewer(palette="Dark2") +
+  theme(axis.text.x = element_text(angle = 90))+
+  scale_x_date(date_breaks = "1 week",
+               limits = as.Date(c('2019-07-11','2019-08-25')),
+               labels = date_format(format = "%W"))
+  
