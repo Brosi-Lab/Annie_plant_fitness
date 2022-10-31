@@ -13,6 +13,17 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Our end goal in cleaning this data is to create a document containing the following for each individual of a species: bloom start estimate, bloom end estimate, soil moisture measures, and seed counts.
 
+```{loading packages}
+library(readxl)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(lubridate)
+library(RColorBrewer)
+library(stringr)
+library(ggplot2)
+```
+
 # Soil Moisture
 
 We began by evaluating soil moisture as a covariate. We had to first determine which soil moisture measure (mean, peak moisture, range, etc.) was most correlated with the seed data. Before we calculated any soil moisture measure, we first wanted to visualize the data with week on the x-axis and % volumetric water content on the y-axis.
@@ -21,14 +32,7 @@ We began by evaluating soil moisture as a covariate. We had to first determine w
 #Clearing Environment
 rm(list = ls())
 #Importing Data
-soil_moisture_attempt = read.csv("adjusted_soil_moisture.csv")
-library(readxl)
-library(dplyr)
-library(reshape2)
-library(ggplot2)
-library(lubridate)
-library(RColorBrewer)
-library(stringr)
+soil_moisture_attempt = read.csv("./Raw_data/adjusted_soil_moisture.csv")
 ```
 
 ```{r transposing data, message=FALSE, warning=FALSE}
@@ -57,7 +61,7 @@ Due to limitations in the field, a few of the sites already melted out before we
 
 ```{r adding effective start date}
 #Adding Effective Start Date
-soil_moisture_attempt$effect.start.date<-as.Date(soil_moisture_attempt$meltout.date+days(14))
+soil_moisture_attempt$effect.start.date<-as.Date(strptime(soil_moisture_attempt$meltout.date,format = "%m/%d/%Y")+days(14))
 ```
 
 One of the soil moisture measures that we wanted to include was rate of soil moisture change. Based on the plot above, the greatest change is the initial decline in moisture over the first few weeks. To capture that change, we created an effective end date that was 3 weeks after the effective start date for each individual. 
@@ -99,7 +103,7 @@ Next, we created a new data frame with our soil moisture calculations.
 soil.moist.final <- list()
 for(i in 1:nrow(soil_moisture_attempt)) {
   temp <- soil_moisture_attempt[i, ]
-  wk.names <- c(temp[ ,'effect.start.week'], temp[ ,'effect.end.week'])
+  wk.names <- c(temp[ ,"effect.start.week"], temp[ ,"effect.end.week"])
   sub.cols <- which(names(temp) %in% wk.names)
   row.new <- temp[c(1:3, sub.cols[1]:sub.cols[2])]
   names(row.new) <- c('site', 'plot.treat','quad', 'effect.start', 'effect.middle', 'effect.end')
@@ -143,9 +147,7 @@ We began data cleaning with Mertensia fusiformis because we had clear seed count
 
 ```{r importing Mertensia, message=FALSE,warning=FALSE}
 #Importing Mertensia Data
-library(readxl)
-Mertensia <- read_excel("~/Documents/BROSI/THESIS/Data Cleaning/Plant fitness.xlsx", 
-    sheet = "Mertensia")
+Mertensia <- read.csv("./Raw_data/Mertensia.csv")
 ```
 
 First, we calculated the number of total Mertensia seeds by multiplying the number of developed flowers by 4. Each Mertensia flower produces 4 seeds.
@@ -155,7 +157,7 @@ First, we calculated the number of total Mertensia seeds by multiplying the numb
 Mertensia$total.seeds<-Mertensia$flower.dev*4
 Mertensia<-Mertensia[!(Mertensia$site=="RustlersGulch"),]
 Mertensia$seed.weight<-as.numeric(Mertensia$seed.weight)
-round(Mertensia$seed.weight,digits=3)
+Mertensia$seed.weight<-round(Mertensia$seed.weight,digits=3)
 Mertensia$site[Mertensia$site=="Pfieler"]<-"Pfeiler"
 ```
 
@@ -164,8 +166,8 @@ Next, we added bloom start and end estimates for each individual. Because we vis
 
 ```{r adding Mertensia phenology estimates}
 #Adding Bloom Start and End Estimates
-Mertensia$start.estimate<-floor_date(Mertensia$bloom.start, "3 days")
-Mertensia$end.estimate<-floor_date(Mertensia$bloom.end, "3 days")
+Mertensia$start.estimate<-as.Date(floor_date(strptime(Mertensia$bloom.start,format = "%m/%d/%y"), "3 days"))
+Mertensia$end.estimate<-as.Date(floor_date(strptime(Mertensia$bloom.end,format = "%m/%d/%y"), "3 days"))
 head(Mertensia)
 ```
 
@@ -173,7 +175,6 @@ We plotted the bloom start estimates and total developed seeds to visualize the 
 
 ```{r plotting Mertensia phenology and seed set,message=FALSE, warning=FALSE}
 #Plotting Phenology and Seed Data for Fun
-library(ggplot2)
 ggplot(Mertensia,aes(x=Mertensia$start.estimate,y=Mertensia$total.seeds, group = plot.treat)) +
   labs(y="Total Developed Seeds",x="Bloom Start Estimate",title="Mertensia") +
   geom_point(aes(color=plot.treat,shape=treat),size=3, alpha = 0.8) +
@@ -201,10 +202,13 @@ Finally, we merged the soil moisture estimates per individual with the phenology
 
 ```{r merging soil moisture to Mertensia individuals}
 #Merging soil moisture variables to individuals
-Mertensia.final<-merge(soil.moist.final,Mertensia,
-                      by.x = c("site","plot.treat","quad"),by.y = c("site","plot.treat","soil.moist.quad"))
+
+#we decided not to include soil moisture variables
+#Mertensia.final<-merge(soil.moist.final,Mertensia,
+#                      by.x = c("site","plot.treat","quad"),by.y = c("site","plot.treat","soil.moist.quad"))
+
 #Excluding unnecessary columns
-Mertensia.final<-subset(Mertensia.final,select = -c(date.oe1,date.harvest,total.fruits,ovule.exp1,fruit.collected,height,notes,quad))
+Mertensia.final<-subset(Mertensia,select = -c(date.oe1,date.harvest,total.fruits,ovule.exp1,fruit.collected,height,notes,quad))
 head(Mertensia.final)
 ```
 
@@ -214,10 +218,11 @@ We started by importing the flower count data from the snowmelt plant spreadshee
 
 ```{r importing flower counts, message=FALSE,warning=FALSE}
 #Loading community flower count data
-flower.counts<-read_excel("~/Documents/BROSI/THESIS/Data Cleaning/snowmelt_plant_RMBL_2019.xlsx",
-    sheet = "plant_survey")
-#Excluding data from other years
-flower.counts<-flower.counts[c(2659:10715),]
+flower.counts<-read.csv("./Raw_data/flower_counts.csv")
+
+#Excluding data from other years-- done previously
+
+#flower.counts<-flower.counts[c(2659:10715),]
 #write.csv(flower.counts, "flower_counts.csv")
 ```
 
@@ -226,16 +231,21 @@ Again, we started with Mertensia. The community peak is based on the maximum num
 ```{r sorting Mertensia}
 #Limiting data to Mertensia counts in the control plot
 Mert.counts<-flower.counts[(flower.counts$plant=="Mertensia fusiformis"),]
-Mert.counts<-Mert.counts[,1:7]
+Mert.counts<-Mert.counts[,-c(1,9)]
 Mert.counts<-na.omit(Mert.counts)
 Mert.counts.control<-Mert.counts[(Mert.counts$plot=="Control"),]
 ```
 
 Next, we loaded the Mertensia individuals data and found the midpoint between the bloom start and bloom end date. This date was also coverted to Julian date.
 
+**in revisions for AJB, Mertensia individual midpoints/peaks were changed to 1/3 through blooming** change back to "/2" in following code chunk if not going to use
+
 ```{r finding Mertensia midpoint}
 #Finding midpoint between start and end estimates
-Mertensia.final$midpoint<- Mertensia.final$start.estimate + floor((Mertensia.final$end.estimate-Mertensia.final$start.estimate)/2)
+#Mertensia.final$midpoint<- Mertensia.final$start.estimate + floor((Mertensia.final$end.estimate-Mertensia.final$start.estimate)/2)
+
+#done with third way through blooming
+Mertensia.final$midpoint<- Mertensia.final$start.estimate + floor((Mertensia.final$end.estimate-Mertensia.final$start.estimate)/3)
 #Converting midpoint to Julian date
 Mertensia.final$julian.midpoint<-julian(Mertensia.final$midpoint, origin = as.Date("2019-01-01"))
 ```
@@ -310,7 +320,9 @@ head(Mertensia.final2)
 ```
 
 ```{r export Mertensia csv}
-#write.csv(Mertensia.final2, "Mertensia_final2.csv")
+#rewrote mertensia with 1/3 through bloom time
+
+#write.csv(Mertensia.final2, "Mertensia_final3.csv")
 ```
 
 ## Getting Relative Position: Separate Control and Manip Population Peaks
@@ -350,8 +362,7 @@ And now we repeat all of this for Potentilla!
 
 ```{r importing Potentilla data, message=FALSE,warning=FALSE}
 #Importing Potentilla Data
-Potentilla <- read_excel("~/Documents/BROSI/THESIS/Data Cleaning/Plant fitness.xlsx", 
-    sheet = "Potentilla")
+Potentilla <- read.csv("./Raw_data/Potentilla.csv")
 ```
 
 For the plant fitness component of the Potentilla data, we combined the developed seeds of flowers that were marked by Sharpie and the rest of the developed seeds on the plant. This gave us the total developed seeds per individual. 
@@ -380,7 +391,6 @@ head(Potentilla)
 
 ```{r plotting Potentilla phenology and seed set,message=FALSE, warning=FALSE}
 #Plotting Phenology and Seed Data for Fun
-library(ggplot2)
 ggplot(Potentilla,aes(x=Potentilla$start.estimate,y=Potentilla$total.seeds, group = plot.treat)) +
   labs(y="Total Developed Seeds",x="Bloom Start Estimate",title="Potentilla") +
   geom_point(aes(color=plot.treat,shape=treat),size=3, alpha = 0.8) +
@@ -591,7 +601,8 @@ head(Potentilla.final2)
 ```
 
 ```{r export Pot csv}
-write.csv(Potentilla.final2, "Potentilla_final2.csv")
+#write.csv(Potentilla.final2, "Potentilla_final2.csv")
+#already written
 ```
 
 #Delphinium
@@ -600,8 +611,7 @@ write.csv(Potentilla.final2, "Potentilla_final2.csv")
 
 ```{r importing Delph data, message=FALSE,warning=FALSE}
 #Importing Delphinium Data
-Delphinium <- read_excel("~/Documents/BROSI/THESIS/Data Cleaning/Plant fitness.xlsx", 
-    sheet = "Delph nutt")
+Delphinium <- read.csv("./Raw_data/Delphinium.csv")
 ```
 
 For the plant fitness component of the Delphinium data, we combined the developed seeds of the first flower and the developed seeds of the rest of the flowers. This gave us the total developed seeds per individual. 
@@ -630,7 +640,6 @@ head(Delphinium)
 
 ```{r plotting Delph phenology and seed set,message=FALSE, warning=FALSE}
 #Plotting Phenology and Seed Data for Fun
-library(ggplot2)
 ggplot(Delphinium,aes(x=Delphinium$start.estimate,y=Delphinium$total.seeds, group = plot.treat)) +
   labs(y="Total Developed Seeds",x="Bloom Start Estimate",title="Delphinium") +
   geom_point(aes(color=plot.treat,shape=treat),size=3, alpha = 0.8) +
@@ -772,5 +781,6 @@ head(Delphinium.final2)
 
 ```{r export Delph csv}
 #write.csv(Delphinium.final2, "Delphinium_final2.csv")
+#already written
 ```
 

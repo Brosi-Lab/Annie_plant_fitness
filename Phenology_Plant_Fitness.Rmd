@@ -56,12 +56,12 @@ suppressWarnings(suppressPackageStartupMessages(require(lmerTest)))
 
 The imported csv files contain the following for each individual of a species: bloom start and end estimates, relative position of blooming in the community, soil moisture variables, and seed counts. These elements were compiled from five different data sets and calculated in a separate document. To view the data cleaning process, refer to the data cleaning R Markdown file, Data_Cleaning.Rmd. 
 
-## Mertensia Data
+## Mertensia Data (new midpoints!)
 
 The first dataset contains the individual data for Mertensia fusiformis, which was found in four of our sites. For Mertensia, we calculated the proportion of developed seeds in addition to the seed counts. We also reformatted the relative position as a deviation variable (the absolute value of the relative position) and a early/late variable (the direction of the relative position).
 
 ```{r Mertensia data import}
-mert = read.csv("Mertensia_final2.csv") # read in Mertensia data
+mert = read.csv("Mertensia_final3.csv") # read in Mertensia data
 mert$prop.dev.seeds<-(mert$dev.seed/mert$total.seeds) #adding proportion of developed seeds
 mert$deviation<-abs(mert$relative.position) #getting deviation from the peak
 
@@ -126,7 +126,7 @@ Because many of the Potentilla individuals were still in bloom when we finished 
 The community flower count data is essential to the conspecific density variable and population peak metric. Each of the species has to be analyzed separately.
 
 ```{r importing flower counts}
-flower.counts=read.csv("flower_counts.csv") #read in flower count data
+flower.counts=read.csv("./Raw_data/flower_counts.csv") #read in flower count data
 ```
 
 ### Mertensia
