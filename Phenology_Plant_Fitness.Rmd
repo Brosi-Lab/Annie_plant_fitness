@@ -320,27 +320,29 @@ We then plotted the interaction between deviation and early/late instead of rela
 
 ```{r Mertensia plot substituting relative position, warning=FALSE, message=FALSE}
 ggplot(mert.open, aes(x=mert.open$deviation, y=mert.open$dev.seed/mert.open$flowers, group= mert.open$early.late)) +
-  labs(y="Total Developed Seeds per Flower",x="Days Relative to Population Peak Bloom", title="Effect of Mertensia Deviation from Peak on Total Developed Seeds") +
+  labs(y="Total Developed Seeds per Flower",x="Days Relative to Population Peak Bloom", title="Mertensia") +
   theme_classic() +
   scale_x_continuous(breaks=seq(0,6,1)) +
-  geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
+  geom_point(size=3, alpha = 0.8, aes(color=early.late,shape=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
   scale_color_brewer(palette="Dark2") + 
-  labs(color="Before or After Peak") +
-  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange"))
+  labs(color="Before or After Peak",shape="Before or After Peak") +
+  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange")) +
+  scale_shape_manual(labels= c("before peak","after peak"), values = c("early"="circle","late"="triangle"))
 ```
 
 Then we plotted the effect of conspecific density and plot treatment on total developed seeds.
 
 ```{r Mertensia plot with conspecific density, warning=FALSE, message=FALSE}
 ggplot(mert.open, aes(x=mert.open$number.conspecifics, y=mert.open$dev.seed/mert.open$flowers, group= mert.open$plot.treat)) +
-  labs(y="Total Developed Seeds per Flower",x="Conspecific Density", title="Effect of Mertensia Conspecific Density on Total Developed Seeds") +
+  labs(y="Total Developed Seeds per Flower",x="Conspecific Density", title="Mertensia") +
   theme_classic() +
-  geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
+  geom_point(size=3, alpha = 0.8, aes(color=plot.treat,shape=plot.treat)) +
   geom_smooth(method="glm",aes(color=plot.treat)) +
   scale_color_brewer(palette="Dark2") + 
-  labs(color="Plot Treatment") +
-  scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
+  labs(color="Plot Treatment",shape="Plot Treatment") +
+  scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue")) +
+  scale_shape_manual(labels= c("control","accelerated snowmelt"), values = c("control"="circle","manip"="triangle"))
 ```
 
 Finally, we plotted all of the data with the pollinator active period. The pollinator active period was the time during which we saw interactions between pollinators and our species. The active period is shaded.
@@ -448,26 +450,29 @@ ggplot(delph.open, aes(x=delph.open$relative.position, y=delph.open$total.seeds,
 
 ```{r delphinium plot substituting relative position,warning=FALSE, message=FALSE}
 ggplot(delph.open, aes(x=delph.open$deviation, y=(delph.open$total.seeds/delph.open$X.flowers), group= delph.open$early.late)) +
-  labs(y="Total Developed Seeds per Flower",x="Days Relative to Population Peak Bloom", title="Effect of Delphinium Deviation from Peak on Total Developed Seeds") +
+  labs(y="Total Developed Seeds per Flower",x="Days Relative to Population Peak Bloom", title="Delphinium") +
   theme_classic() +
   scale_x_continuous(breaks=seq(0,10,1)) +
-  geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
+  geom_point(size=3, alpha = 0.8, aes(color=early.late,shape=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
   scale_color_brewer(palette="Dark2") + 
-  labs(color="Before or After Peak") +
-  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange"))
+  labs(color="Before or After Peak",shape="Before or After Peak") +
+  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange")) +
+  scale_shape_manual(labels= c("before peak","after peak"), values = c("early"="circle","late"="triangle")) +
+  geom_text(x=9,y=30,label="p = 0.025")
 ```
 
 
 ```{r Delphinium plot with conspecific density,warning=FALSE, message=FALSE}
 ggplot(delph.open, aes(x=delph.open$number.conspecifics, y=delph.open$total.seeds/delph.open$X.flowers, group= delph.open$plot.treat)) +
-  labs(y="Total Developed Seeds per Flower",x="Conspecific Density", title="Effect of Delphinium Conspecific Density on Total Developed Seeds") +
+  labs(y="Total Developed Seeds per Flower",x="Conspecific Density", title="Delphinium") +
   theme_classic() +
-  geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
-  geom_smooth(method="glm",aes(color=plot.treat)) +
+  geom_point(size=3, alpha = 0.8, aes(color=plot.treat,shape=plot.treat)) +
+  geom_smooth(method="glm",linetype="dashed",aes(color=plot.treat)) +
   scale_color_brewer(palette="Dark2") + 
-  labs(color="Plot Treatment") +
-  scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
+  labs(color="Plot Treatment",shape="Plot Treatment") +
+  scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue")) +
+  scale_shape_manual(labels= c("control","accelerated snowmelt"), values = c("control"="circle","manip"="triangle"))
 ```
 
 Finally, we plotted the pollinator activity period with the total number of developed seeds and midpoint of individuals.
@@ -583,25 +588,28 @@ ggplot(pot.open, aes(x=pot.open$relative.position, y=pot.open$total.seeds, group
 
 ```{r potentilla plot substituting relative position,warning=FALSE, message=FALSE}
 ggplot(pot.open, aes(x=pot.open$deviation, y=pot.open$total.seeds/pot.open$X.flowers, group= pot.open$early.late)) +
-  labs(y="Total Developed Seeds per Flower",x="Days Relative to Population Peak Bloom",title="Effect of Potentilla Deviation from Peak on Total Developed Seeds") +
+  labs(y="Total Developed Seeds per Flower",x="Days Relative to Population Peak Bloom",title="Potentilla") +
   theme_classic() +
   scale_x_continuous(breaks=seq(0,24,2)) +
-  geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
+  geom_point(size=3, alpha = 0.8, aes(color=early.late,shape=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
   scale_color_brewer(palette="Dark2") + 
-  labs(color="Before or After Peak") +
-  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange"))
+  labs(color="Before or After Peak",shape="Before or After Peak") +
+  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange")) +
+  scale_shape_manual(labels= c("before peak","after peak"), values = c("early"="circle","late"="triangle")) +
+  geom_text(x=22,y=17,label="p < 0.01")
 ```
 
 ```{r Potentilla plot with conspecific density,warning=FALSE, message=FALSE}
 ggplot(pot.open, aes(x=pot.open$number.conspecifics, y=pot.open$total.seeds/pot.open$X.flowers, group= pot.open$plot.treat)) +
-  labs(y="Total Developed Seeds per Flower",x="Conspecific Density", title="Effect of Potentilla Conspecific Density on Total Developed Seeds") +
+  labs(y="Total Developed Seeds per Flower",x="Conspecific Density", title="Potentilla") +
   theme_classic() +
-  geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
-  geom_smooth(method="glm",aes(color=plot.treat)) +
+  geom_point(size=3, alpha = 0.8, aes(color=plot.treat,shape=plot.treat)) +
+  geom_smooth(method="glm",linetype="dashed",aes(color=plot.treat)) +
   scale_color_brewer(palette="Dark2") + 
-  labs(color="Plot Treatment") +
-  scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
+  labs(color="Plot Treatment",shape="Plot Treatment") +
+  scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue")) +
+  scale_shape_manual(labels= c("control","accelerated snowmelt"), values = c("control"="circle","manip"="triangle"))
 ```
 
 Again we plotted the pollinator activity period.
@@ -690,26 +698,28 @@ ggplot(mert.open, aes(x=mert.open$relative.position, y=mert.open$prop.dev.seeds,
 
 ```{r Mertensia deviation proportion plot,warning=FALSE, message=FALSE}
 ggplot(mert.open, aes(x=mert.open$deviation, y=mert.open$prop.dev.seeds/mert.open$flowers, group= mert.open$early.late)) +
-  labs(y="Proportion of Developed Seeds per Flower",x="Days Relative to Population Peak Bloom",title="Effect of Mertensia Deviation from Peak on Proportion of Developed Seeds") +
+  labs(y="Proportion of Developed Seeds per Flower",x="Days Relative to Population Peak Bloom",title="Mertensia") +
   theme_classic() +
   scale_x_continuous(breaks=seq(0,6,1)) +
-  geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
+  geom_point(size=3, alpha = 0.8, aes(color=early.late,shape=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
   scale_color_brewer(palette="Dark2") + 
-  labs(color="Before or After Peak") +
-  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange"))
+  labs(color="Before or After Peak",shape="Before or After Peak") +
+  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange")) +
+  scale_shape_manual(labels= c("before peak","after peak"), values = c("early"="circle","late"="triangle"))
 ```
 
 
 ```{r mertensia plot conspecifics and proportions,warning=FALSE, message=FALSE}
 ggplot(mert.open, aes(x=mert.open$number.conspecifics, y=mert.open$prop.dev.seeds/mert.open$flowers, group= mert.open$plot.treat)) +
-  labs(y="Proportion of Developed Seeds per Flower",x="Conspecific Density",title="Effect of Mertensia Conspecific Density on Proportion of Developed Seeds") +
+  labs(y="Proportion of Developed Seeds per Flower",x="Conspecific Density",title="Mertensia") +
   theme_classic() +
-  geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
+  geom_point(size=3, alpha = 0.8, aes(color=plot.treat,shape=plot.treat)) +
   geom_smooth(method="glm",aes(color=plot.treat)) +
   scale_color_brewer(palette="Dark2") + 
-  labs(color="Plot Treatment") +
-  scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue"))
+  labs(color="Plot Treatment",shape="Plot Treatment") +
+  scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue")) +
+  scale_shape_manual(labels= c("control","accelerated snowmelt"), values = c("control"="circle","manip"="triangle"))
 ```
 
 Finally, we added pollinator activity.
@@ -789,25 +799,28 @@ ggplot(delph.open, aes(x=delph.open$relative.position, y=delph.open$prop.dev.see
 
 ```{r Delphinium deviation proportion plot,warning=FALSE, message=FALSE}
 ggplot(delph.open, aes(x=delph.open$deviation, y=(delph.open$prop.dev.seeds/delph.open$X.flowers), group= delph.open$early.late)) +
-  labs(y="Proportion of Developed Seeds per Flower",x="Days Relative to Population Peak Bloom",title="Effect of Delphinium Deviation from Peak on Proportion of Developed Seeds") +
+  labs(y="Proportion of Developed Seeds per Flower",x="Days Relative to Population Peak Bloom",title="Delphinium") +
   theme_classic() +
   scale_x_continuous(breaks=seq(0,10,1)) +
-  geom_point(size=3, alpha = 0.8, aes(color=early.late)) +
-  geom_smooth(method="glm",aes(color=early.late)) +
+  geom_point(size=3, alpha = 0.8, aes(color=early.late,shape=early.late)) +
+  geom_smooth(method="glm",linetype="dashed",aes(color=early.late)) +
   scale_color_brewer(palette="Dark2") + 
-  labs(color="Before or After Peak") +
-  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange"))
+  labs(color="Before or After Peak",shape="Before or After Peak") +
+  scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange")) +
+  scale_shape_manual(labels= c("before peak","after peak"), values = c("early"="circle","late"="triangle"))
 ```
 
 ```{r Delphinium plot conspecifics and proportions,warning=FALSE, message=FALSE}
 ggplot(delph.open, aes(x=delph.open$number.conspecifics, y=delph.open$prop.dev.seeds/delph.open$X.flowers, group= delph.open$plot.treat)) +
-  labs(y="Proportion of Developed Seeds per Flower",x="Conspecific Density",title="Effect of Delphinium Conspecific Density on Proportion of Developed Seeds") +
+  labs(y="Proportion of Developed Seeds per Flower",x="Conspecific Density",title="Delphinium") +
   theme_classic() +
-  geom_point(size=3, alpha = 0.8, aes(color=plot.treat)) +
-  geom_smooth(method="glm",aes(color=plot.treat)) +
+  geom_point(size=3, alpha = 0.8, aes(color=plot.treat,shape=plot.treat)) +
+  geom_smooth(method="glm",linetype="dashed",aes(color=plot.treat)) +
   scale_color_brewer(palette="Dark2") + 
-  labs(color="Plot Treatment") +
-  scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue")) + xlim(0,110)
+  labs(color="Plot Treatment",shape="Plot Treatment") +
+  scale_color_manual(labels= c("control","accelerated snowmelt"), values = c("control"="darkgreen","manip"="blue")) +
+  scale_shape_manual(labels= c("control","accelerated snowmelt"), values = c("control"="circle","manip"="triangle"))+
+  xlim(0,110)
 ```
 
 Finally, we added pollinator activity.
