@@ -120,7 +120,6 @@ ggplot(mert.counts.by.site,aes(x=date,y=number.conspecifics)) +
   geom_vline(xintercept = as.Date("2019-06-20"),linetype="dotdash") +
   labs(y="Floral Abundance",x="Week", title = "Mertensia Peak Bloom") +
   scale_color_brewer(palette="Dark2") +
-  theme(axis.text.x = element_text(angle = 90))+
   scale_x_date(date_breaks = "1 week",
                limits = as.Date(c('2019-06-07','2019-07-18')),
                labels = date_format(format = "%W"))
@@ -132,7 +131,6 @@ ggplot(delph.counts.by.site,aes(x=date,y=number.conspecifics)) +
   geom_vline(xintercept=as.Date("2019-07-06")) +
   labs(y="Floral Abundance",x="Week", title = "Delphinium Peak Bloom") +
   scale_color_brewer(palette="Dark2") +
-  theme(axis.text.x = element_text(angle = 90))+
   scale_x_date(date_breaks = "1 week",
                limits = as.Date(c('2019-06-18','2019-07-25')),
                labels = date_format(format = "%W"))
@@ -144,7 +142,6 @@ ggplot(pot.counts.by.site,aes(x=date,y=number.conspecifics)) +
   geom_vline(xintercept=as.Date("2019-08-02")) +
   labs(y="Floral Abundance",x="Week", title = "Potentilla Peak Bloom") +
   scale_color_brewer(palette="Dark2") +
-  theme(axis.text.x = element_text(angle = 90))+
   scale_x_date(date_breaks = "1 week",
                limits = as.Date(c('2019-07-11','2019-08-25')),
                labels = date_format(format = "%W"))
