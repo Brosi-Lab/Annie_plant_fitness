@@ -321,7 +321,7 @@ We then plotted the interaction between deviation and early/late instead of rela
 ```{r Mertensia plot substituting relative position, warning=FALSE, message=FALSE}
 ggplot(mert.open, aes(x=mert.open$deviation, y=mert.open$dev.seed/mert.open$flowers, group= mert.open$early.late)) +
   labs(y="Total Developed Seeds per Flower",x="Days Relative to Population Peak Bloom", title="Mertensia") +
-  theme_classic() +
+  theme_classic() + theme(plot.title = element_text(face = "italic")) +
   scale_x_continuous(breaks=seq(0,9,1)) +
   geom_point(size=3, alpha = 0.8, aes(color=early.late,shape=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
@@ -329,7 +329,7 @@ ggplot(mert.open, aes(x=mert.open$deviation, y=mert.open$dev.seed/mert.open$flow
   labs(color="Before or After Peak",shape="Before or After Peak") +
   scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange")) +
   scale_shape_manual(labels= c("before peak","after peak"), values = c("early"="circle","late"="triangle")) +
-  geom_text(x=7,y=2,label="p = 0.088",size=5)+
+  annotate("text",x=7,y=2,label="italic(p) == 0.088",size=5,parse=TRUE)+
   theme(axis.text = element_text(size=12),axis.title = element_text(size=14),title = element_text(size=14),legend.text = element_text(size=12))
 ```
 
@@ -338,7 +338,7 @@ Then we plotted the effect of conspecific density and plot treatment on total de
 ```{r Mertensia plot with conspecific density, warning=FALSE, message=FALSE}
 ggplot(mert.open, aes(x=mert.open$number.conspecifics, y=mert.open$dev.seed/mert.open$flowers, group= mert.open$plot.treat)) +
   labs(y="Total Developed Seeds per Flower",x="Conspecific Density", title="Mertensia") +
-  theme_classic() +
+  theme_classic() + theme(plot.title = element_text(face = "italic")) +
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat,shape=plot.treat)) +
   geom_smooth(method="glm",linetype="dashed",aes(color=plot.treat)) +
   scale_color_brewer(palette="Dark2") + 
@@ -454,7 +454,7 @@ ggplot(delph.open, aes(x=delph.open$relative.position, y=delph.open$total.seeds,
 ```{r delphinium plot substituting relative position,warning=FALSE, message=FALSE}
 ggplot(delph.open, aes(x=delph.open$deviation, y=(delph.open$total.seeds/delph.open$X.flowers), group= delph.open$early.late)) +
   labs(y="Total Developed Seeds per Flower",x="Days Relative to Population Peak Bloom", title="Delphinium") +
-  theme_classic() +
+  theme_classic() + theme(plot.title = element_text(face = "italic"))+
   scale_x_continuous(breaks=seq(0,10,1)) +
   geom_point(size=3, alpha = 0.8, aes(color=early.late,shape=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
@@ -462,7 +462,7 @@ ggplot(delph.open, aes(x=delph.open$deviation, y=(delph.open$total.seeds/delph.o
   labs(color="Before or After Peak",shape="Before or After Peak") +
   scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange")) +
   scale_shape_manual(labels= c("before peak","after peak"), values = c("early"="circle","late"="triangle")) +
-  geom_text(x=9,y=30,label="p = 0.025",size=5)+
+  annotate("text",x=9,y=30,label="italic(p) == 0.025",size=5,parse=TRUE)+
   theme(axis.text = element_text(size=12),axis.title = element_text(size=14),title = element_text(size=14),legend.text = element_text(size=12))
 ```
 
@@ -470,7 +470,7 @@ ggplot(delph.open, aes(x=delph.open$deviation, y=(delph.open$total.seeds/delph.o
 ```{r Delphinium plot with conspecific density,warning=FALSE, message=FALSE}
 ggplot(delph.open, aes(x=delph.open$number.conspecifics, y=delph.open$total.seeds/delph.open$X.flowers, group= delph.open$plot.treat)) +
   labs(y="Total Developed Seeds per Flower",x="Conspecific Density", title="Delphinium") +
-  theme_classic() +
+  theme_classic() + theme(plot.title = element_text(face = "italic"))+
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat,shape=plot.treat)) +
   geom_smooth(method="glm",linetype="dashed",aes(color=plot.treat)) +
   scale_color_brewer(palette="Dark2") + 
@@ -594,7 +594,7 @@ ggplot(pot.open, aes(x=pot.open$relative.position, y=pot.open$total.seeds, group
 ```{r potentilla plot substituting relative position,warning=FALSE, message=FALSE}
 ggplot(pot.open, aes(x=pot.open$deviation, y=pot.open$total.seeds/pot.open$X.flowers, group= pot.open$early.late)) +
   labs(y="Total Developed Seeds per Flower",x="Days Relative to Population Peak Bloom",title="Potentilla") +
-  theme_classic() +
+  theme_classic() + theme(plot.title = element_text(face="italic"))+
   scale_x_continuous(breaks=seq(0,24,2)) +
   geom_point(size=3, alpha = 0.8, aes(color=early.late,shape=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
@@ -602,14 +602,14 @@ ggplot(pot.open, aes(x=pot.open$deviation, y=pot.open$total.seeds/pot.open$X.flo
   labs(color="Before or After Peak",shape="Before or After Peak") +
   scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange")) +
   scale_shape_manual(labels= c("before peak","after peak"), values = c("early"="circle","late"="triangle")) +
-  geom_text(x=22,y=17,label="p < 0.01",size=5)+
+  annotate("text",x=22,y=17,label="italic(p) < 0.01",size=5,parse=TRUE)+
   theme(axis.text = element_text(size=12),axis.title = element_text(size=14),title = element_text(size=14),legend.text = element_text(size=12))
 ```
 
 ```{r Potentilla plot with conspecific density,warning=FALSE, message=FALSE}
 ggplot(pot.open, aes(x=pot.open$number.conspecifics, y=pot.open$total.seeds/pot.open$X.flowers, group= pot.open$plot.treat)) +
   labs(y="Total Developed Seeds per Flower",x="Conspecific Density", title="Potentilla") +
-  theme_classic() +
+  theme_classic() + theme(plot.title = element_text(face = "italic"))+
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat,shape=plot.treat)) +
   geom_smooth(method="glm",linetype="dashed",aes(color=plot.treat)) +
   scale_color_brewer(palette="Dark2") + 
@@ -706,7 +706,7 @@ ggplot(mert.open, aes(x=mert.open$relative.position, y=mert.open$prop.dev.seeds,
 ```{r Mertensia deviation proportion plot,warning=FALSE, message=FALSE}
 ggplot(mert.open, aes(x=mert.open$deviation, y=mert.open$prop.dev.seeds/mert.open$flowers, group= mert.open$early.late)) +
   labs(y="Proportion of Developed Seeds per Flower",x="Days Relative to Population Peak Bloom",title="Mertensia") +
-  theme_classic() +
+  theme_classic() + theme(plot.title = element_text(face = "italic"))+
   scale_x_continuous(breaks=seq(0,8,1)) +
   geom_point(size=3, alpha = 0.8, aes(color=early.late,shape=early.late)) +
   geom_smooth(method="glm",aes(color=early.late)) +
@@ -714,7 +714,7 @@ ggplot(mert.open, aes(x=mert.open$deviation, y=mert.open$prop.dev.seeds/mert.ope
   labs(color="Before or After Peak",shape="Before or After Peak") +
   scale_color_manual(labels= c("before peak","after peak"), values = c("early"="darkred","late"="darkorange")) +
   scale_shape_manual(labels= c("before peak","after peak"), values = c("early"="circle","late"="triangle")) +
-  geom_text(x=7,y=0.06,label="p = 0.019",size=5)+
+  annotate("text",x=7,y=0.06,label="italic(p) == 0.019",size=5,parse=TRUE)+
   theme(axis.text = element_text(size=12),axis.title = element_text(size=14),title = element_text(size=14),legend.text = element_text(size=12))
 ```
 
@@ -722,14 +722,14 @@ ggplot(mert.open, aes(x=mert.open$deviation, y=mert.open$prop.dev.seeds/mert.ope
 ```{r mertensia plot conspecifics and proportions,warning=FALSE, message=FALSE}
 ggplot(mert.open, aes(x=mert.open$number.conspecifics, y=mert.open$prop.dev.seeds/mert.open$flowers, group= mert.open$plot.treat)) +
   labs(y="Proportion of Developed Seeds per Flower",x="Conspecific Density",title="Mertensia") +
-  theme_classic() +
+  theme_classic() +theme(plot.title = element_text(face = "italic"))+
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat,shape=plot.treat)) +
   geom_smooth(method="glm",aes(color=plot.treat)) +
   scale_color_brewer(palette="Dark2") + 
   labs(color="Plot Treatment",shape="Plot Treatment") +
   scale_color_manual(labels= c("control","accelerated"), values = c("control"="darkgreen","manip"="blue")) +
   scale_shape_manual(labels= c("control","accelerated"), values = c("control"="circle","manip"="triangle")) +
-  geom_text(x=160,y=0.06,label="p < 0.01",size=5) +
+  annotate("text",x=160,y=0.06,label="italic(p) < 0.01",size=5,parse=TRUE) +
   theme(axis.text = element_text(size=12),axis.title = element_text(size=14),title = element_text(size=14),legend.text = element_text(size=12))
 ```
 
@@ -811,7 +811,7 @@ ggplot(delph.open, aes(x=delph.open$relative.position, y=delph.open$prop.dev.see
 ```{r Delphinium deviation proportion plot,warning=FALSE, message=FALSE}
 ggplot(delph.open, aes(x=delph.open$deviation, y=(delph.open$prop.dev.seeds/delph.open$X.flowers), group= delph.open$early.late)) +
   labs(y="Proportion of Developed Seeds per Flower",x="Days Relative to Population Peak Bloom",title="Delphinium") +
-  theme_classic() +
+  theme_classic() + theme(plot.title = element_text(face="italic"))+
   scale_x_continuous(breaks=seq(0,10,1)) +
   geom_point(size=3, alpha = 0.8, aes(color=early.late,shape=early.late)) +
   geom_smooth(method="glm",linetype="dashed",aes(color=early.late)) +
@@ -825,7 +825,7 @@ ggplot(delph.open, aes(x=delph.open$deviation, y=(delph.open$prop.dev.seeds/delp
 ```{r Delphinium plot conspecifics and proportions,warning=FALSE, message=FALSE}
 ggplot(delph.open, aes(x=delph.open$number.conspecifics, y=delph.open$prop.dev.seeds/delph.open$X.flowers, group= delph.open$plot.treat)) +
   labs(y="Proportion of Developed Seeds per Flower",x="Conspecific Density",title="Delphinium") +
-  theme_classic() +
+  theme_classic() + theme(plot.title = element_text(face="italic"))+
   geom_point(size=3, alpha = 0.8, aes(color=plot.treat,shape=plot.treat)) +
   geom_smooth(method="glm",linetype="dashed",aes(color=plot.treat)) +
   scale_color_brewer(palette="Dark2") + 
